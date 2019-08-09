@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "module": "commonjs",
+      "target": "es2016",
+      "noImplicitAny": false,
+      "sourceMap": true,
+      "pretty": true,
+      "outDir": "./dist"
+    },
+    "include": [
+      "./src/"
+    ],
+    "exclude": [
+      "src/**/*.test.ts",
+      "src/**/*.spec.ts"
+    ]
+  }
