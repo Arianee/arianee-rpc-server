@@ -11,7 +11,7 @@ const certificateRPCFactory = fetchItem => {
 
 
   const read = async (data, callback) => {
-    
+    console.log('ici')
     if (userHasRight === true) {
       const content = await fetchItem();
       callback(null, content);
