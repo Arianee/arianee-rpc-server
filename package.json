@@ -17,6 +17,7 @@
     "axios": "^0.19.0",
     "express": "^4.17.1",
     "isobjectmatchingmodel": "^1.0.1",
+    "@arianee/arianeejs": "git+https://github.com/stefdelec/arianeeJS.git",
     "jayson": "^3.0.2",
     "jrpc": "^3.1.2"
   },
