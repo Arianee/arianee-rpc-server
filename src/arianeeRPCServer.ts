@@ -3,9 +3,15 @@ import { RPCMethods } from "./rpc";
 
 export class ArianeeRPCCustom {
   private certificateRPC;
-
+  private eventRPC;
+  
   public setFetchCertificateContent(func) {
     this.certificateRPC = RPCMethods.certificateRPCFactory(func);
+    return this;
+  }
+
+  public setFetchEventContent(func) {
+    this.eventRPC = RPCMethods.eventRPCFactory(func);
     return this;
   }
 
