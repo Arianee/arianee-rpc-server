@@ -25,13 +25,23 @@ interface Payload {
 }
 
 Arianee();
-const eventRPCFactory = (fetchItem) => {
-  const create = (data: Payload, callback) => {
 
+
+const eventRPCFactory = (fetchItem,createItem) => {
+  const create = (data: Payload, callback) => {
+    const successCallBack = async () => {
+        try {
+          const content = await createItem();
+          return callback(null, content);
+        } catch (err) {
+          return callback(MAINERROR);
+        }
+      };
+    
     callback(null, data);
   };
 
-  const read = async (data:Payload, callback) => {
+  const read = async (data: Payload, callback) => {
     const successCallBack = async () => {
       try {
         const content = await fetchItem(tokenId);
