@@ -10,8 +10,8 @@ export class ArianeeRPCCustom {
     return this;
   }
 
-  public setFetchEventContent(func) {
-    this.eventRPC = RPCMethods.eventRPCFactory(func);
+  public setFetchEventContent(funcFetch, funcCreate) {
+    this.eventRPC = RPCMethods.eventRPCFactory(funcFetch, funcCreate);
     return this;
   }
 

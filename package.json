@@ -1,8 +1,8 @@
 {
-  "name": "arianee-server",
+  "name": "@arianee/arianee-server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/",
   "scripts": {
     "test": "jest --watchAll",
     "start": "nodemon dist/index.js",
