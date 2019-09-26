@@ -49,6 +49,12 @@ const arianeeRpcServer = new ArianeeRPCCustom()
     }
   })
 
+
+    .setFetchEventContent(()=>{
+        console.log('fetch event');
+    },()=>{
+      console.log('create event');
+    })
   // with fetch with http call
 
   .build();

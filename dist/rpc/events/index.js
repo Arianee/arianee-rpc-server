@@ -11,6 +11,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const rpc_name_1 = require("../rpc-name");
 const error_1 = require("../errors/error");
 const arianeejs_1 = require("@arianee/arianeejs");
+const axios_1 = require("axios");
 arianeejs_1.Arianee();
 const eventRPCFactory = (fetchItem, createItem) => {
     const create = (data, callback) => {
@@ -23,7 +24,23 @@ const eventRPCFactory = (fetchItem, createItem) => {
                 return callback(error_1.MAINERROR);
             }
         });
-        callback(null, data);
+        const { tokenId, authentification, eventId, json, schemaUrl, uri, issuer } = data;
+        const tempWallet = arianeejs_1.Arianee().fromRandomKey();
+        axios_1.default.get(schemaUrl)
+            .then((response) => __awaiter(this, void 0, void 0, function* () {
+            const schema = response.data;
+            const imprint = yield tempWallet.utils.cert(schema, json);
+            const events = yield tempWallet.eventContract.getPastEvents('EventCreated', { fromBlock: 0, toBlock: "latest", filter: { _tokenId: tokenId, _imprint: imprint, _provider: issuer } });
+            if (events.length > 0) {
+                successCallBack();
+            }
+            else {
+                return callback(error_1.MAINERROR);
+            }
+        }))
+            .catch(err => {
+            return callback(error_1.MAINERROR);
+        });
     };
     const read = (data, callback) => __awaiter(this, void 0, void 0, function* () {
         const successCallBack = () => __awaiter(this, void 0, void 0, function* () {

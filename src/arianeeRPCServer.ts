@@ -17,7 +17,8 @@ export class ArianeeRPCCustom {
 
   private createServerMiddleWare() {
     const server = new jayson.Server({
-      ...this.certificateRPC
+      ...this.certificateRPC,
+      ...this.eventRPC
     });
 
     return server.middleware();

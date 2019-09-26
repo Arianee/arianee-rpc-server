@@ -45,6 +45,11 @@ const arianeeRpcServer = new arianeeRPCServer_1.ArianeeRPCCustom()
         return Promise.reject();
     }
 })
+    .setFetchEventContent(() => {
+    console.log('fetch event');
+}, () => {
+    console.log('create event');
+})
     // with fetch with http call
     .build();
 exports.arianeeRpcServer = arianeeRpcServer;

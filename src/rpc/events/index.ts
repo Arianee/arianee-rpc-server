@@ -3,10 +3,16 @@ import { isObjectMatchingModel } from "isobjectmatchingmodel";
 import { MAINERROR } from "../errors/error";
 import { Arianee } from "@arianee/arianeejs";
 import { Aria } from "@arianee/ts-contracts";
+import axios from 'axios';
+
 
 /*
 { tokenId: 3838065,
     eventId:333,
+    json:{},
+    schemaUrl:"",
+    uri:"",
+    issuer:"",
     authentification:
      { hash:
         '0xd5a77c8b8e828fb7669f67f726d813f1686b403a6bfc45a3cf7ca670961c9cf6',
@@ -17,6 +23,10 @@ import { Aria } from "@arianee/ts-contracts";
 interface Payload {
   tokenId: number;
   eventId: number;
+  json: any;
+  schemaUrl:string;
+  uri:string;
+  issuer:string;
   authentification: {
     hash: string;
     signature: string;
@@ -37,8 +47,28 @@ const eventRPCFactory = (fetchItem,createItem) => {
           return callback(MAINERROR);
         }
       };
-    
-    callback(null, data);
+
+      const { tokenId, authentification, eventId, json, schemaUrl, uri, issuer } = data;
+
+      const tempWallet = Arianee().fromRandomKey();
+
+      axios.get(schemaUrl)
+          .then(async (response)=>{
+
+            const schema = response.data;
+            const imprint = await tempWallet.utils.cert(schema, json);
+
+            const events = await tempWallet.eventContract.getPastEvents('EventCreated', {fromBlock:0,toBlock:"latest", filter:{_tokenId:tokenId,_imprint:imprint, _provider:issuer}});
+            if(events.length>0){
+                successCallBack();
+            }
+            else{
+              return callback(MAINERROR);
+            }
+          })
+          .catch(err=>{
+              return callback(MAINERROR);
+          });
   };
 
   const read = async (data: Payload, callback) => {

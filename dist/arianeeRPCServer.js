@@ -12,7 +12,7 @@ class ArianeeRPCCustom {
         return this;
     }
     createServerMiddleWare() {
-        const server = new jayson.Server(Object.assign({}, this.certificateRPC));
+        const server = new jayson.Server(Object.assign({}, this.certificateRPC, this.eventRPC));
         return server.middleware();
     }
     build() {
