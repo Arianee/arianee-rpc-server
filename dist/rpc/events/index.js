@@ -14,34 +14,36 @@ const arianeejs_1 = require("@arianee/arianeejs");
 const axios_1 = require("axios");
 arianeejs_1.Arianee();
 const eventRPCFactory = (fetchItem, createItem) => {
-    const create = (data, callback) => {
-        const successCallBack = () => __awaiter(this, void 0, void 0, function* () {
+    const create = (data, callback) => __awaiter(this, void 0, void 0, function* () {
+        const successCallBack = (eventId) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const content = yield createItem();
+                const content = yield createItem(eventId, json);
                 return callback(null, content);
             }
             catch (err) {
                 return callback(error_1.MAINERROR);
             }
         });
-        const { tokenId, authentification, eventId, json, schemaUrl, uri, issuer } = data;
+        const { authentification, eventId, json, schemaUrl, uri, issuer } = data;
         const tempWallet = arianeejs_1.Arianee().fromRandomKey();
-        axios_1.default.get(schemaUrl)
-            .then((response) => __awaiter(this, void 0, void 0, function* () {
-            const schema = response.data;
-            const imprint = yield tempWallet.utils.cert(schema, json);
-            const events = yield tempWallet.eventContract.getPastEvents('EventCreated', { fromBlock: 0, toBlock: "latest", filter: { _tokenId: tokenId, _imprint: imprint, _provider: issuer } });
-            if (events.length > 0) {
-                successCallBack();
-            }
-            else {
-                return callback(error_1.MAINERROR);
-            }
-        }))
-            .catch(err => {
+        try {
+            const event = yield tempWallet.eventContract.methods.events(eventId).call();
+            axios_1.default.get(schemaUrl)
+                .then((response) => __awaiter(this, void 0, void 0, function* () {
+                const schema = response.data;
+                const imprint = yield tempWallet.utils.cert(schema, json);
+                if (event.imprint === imprint) {
+                    successCallBack(eventId);
+                }
+                else {
+                    return callback(error_1.MAINERROR);
+                }
+            }));
+        }
+        catch (err) {
             return callback(error_1.MAINERROR);
-        });
-    };
+        }
+    });
     const read = (data, callback) => __awaiter(this, void 0, void 0, function* () {
         const successCallBack = () => __awaiter(this, void 0, void 0, function* () {
             try {

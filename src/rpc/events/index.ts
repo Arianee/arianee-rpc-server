@@ -38,37 +38,37 @@ Arianee();
 
 
 const eventRPCFactory = (fetchItem,createItem) => {
-  const create = (data: Payload, callback) => {
-    const successCallBack = async () => {
+  const create = async (data: Payload, callback) => {
+    const successCallBack = async (eventId) => {
         try {
-          const content = await createItem();
+          const content = await createItem(eventId, json);
           return callback(null, content);
         } catch (err) {
           return callback(MAINERROR);
         }
       };
-
-      const { tokenId, authentification, eventId, json, schemaUrl, uri, issuer } = data;
+      const { authentification, eventId, json, schemaUrl, uri, issuer } = data;
 
       const tempWallet = Arianee().fromRandomKey();
 
-      axios.get(schemaUrl)
-          .then(async (response)=>{
+    try{
+        const event = await tempWallet.eventContract.methods.events(eventId).call();
+        axios.get(schemaUrl)
+            .then(async (response)=> {
+                const schema = response.data;
+                const imprint = await tempWallet.utils.cert(schema, json);
+                if(event.imprint === imprint){
+                    successCallBack(eventId);
+                }
+                else{
+                    return callback(MAINERROR);
+                }
+            });
+    }
+    catch(err){
+        return callback(MAINERROR);
+    }
 
-            const schema = response.data;
-            const imprint = await tempWallet.utils.cert(schema, json);
-
-            const events = await tempWallet.eventContract.getPastEvents('EventCreated', {fromBlock:0,toBlock:"latest", filter:{_tokenId:tokenId,_imprint:imprint, _provider:issuer}});
-            if(events.length>0){
-                successCallBack();
-            }
-            else{
-              return callback(MAINERROR);
-            }
-          })
-          .catch(err=>{
-              return callback(MAINERROR);
-          });
   };
 
   const read = async (data: Payload, callback) => {
