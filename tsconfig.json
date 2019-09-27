@@ -4,9 +4,10 @@
       "target": "es2016",
       "noImplicitAny": false,
       "sourceMap": true,
+      "declaration": true,
       "pretty": true,
       "outDir": "./dist",
-      "resolveJsonModule": true,
+      "resolveJsonModule": true
     },
     "include": [
       "./src/"
