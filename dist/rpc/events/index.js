@@ -24,11 +24,11 @@ const eventRPCFactory = (fetchItem, createItem) => {
                 return callback(error_1.MAINERROR);
             }
         });
-        const { authentification, eventId, json, schemaUrl, uri, issuer } = data;
+        const { authentification, eventId, json } = data;
         const tempWallet = arianeejs_1.Arianee().fromRandomKey();
         try {
             const event = yield tempWallet.eventContract.methods.events(eventId).call();
-            axios_1.default.get(schemaUrl)
+            axios_1.default.get(json.$schema)
                 .then((response) => __awaiter(this, void 0, void 0, function* () {
                 const schema = response.data;
                 const imprint = yield tempWallet.utils.cert(schema, json);

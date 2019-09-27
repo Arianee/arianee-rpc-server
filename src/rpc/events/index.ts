@@ -10,9 +10,6 @@ import axios from 'axios';
 { tokenId: 3838065,
     eventId:333,
     json:{},
-    schemaUrl:"",
-    uri:"",
-    issuer:"",
     authentification:
      { hash:
         '0xd5a77c8b8e828fb7669f67f726d813f1686b403a6bfc45a3cf7ca670961c9cf6',
@@ -21,123 +18,124 @@ import axios from 'axios';
        message: '{"tokenId":3838065,"timestamp":"2019-09-13T10:56:59.264Z"}' } }
 */
 interface Payload {
-  tokenId: number;
-  eventId: number;
-  json: any;
-  schemaUrl:string;
-  uri:string;
-  issuer:string;
-  authentification: {
-    hash: string;
-    signature: string;
-    message: any;
-  };
+    tokenId: number;
+    eventId: number;
+    json: any;
+    schemaUrl:string;
+    uri:string;
+    issuer:string;
+    authentification: {
+        hash: string;
+        signature: string;
+        message: any;
+    };
 }
 
 Arianee();
 
 
 const eventRPCFactory = (fetchItem,createItem) => {
-  const create = async (data: Payload, callback) => {
-    const successCallBack = async (eventId) => {
-        try {
-          const content = await createItem(eventId, json);
-          return callback(null, content);
-        } catch (err) {
-          return callback(MAINERROR);
+    const create = async (data: Payload, callback) => {
+        const successCallBack = async (eventId) => {
+            try {
+                const content = await createItem(eventId, json);
+                return callback(null, content);
+            } catch (err) {
+                return callback(MAINERROR);
+            }
+        };
+
+        const { authentification, eventId, json} = data;
+
+        const tempWallet = Arianee().fromRandomKey();
+
+        try{
+            const event = await tempWallet.eventContract.methods.events(eventId).call();
+            axios.get(json.$schema)
+                .then(async (response)=> {
+                    const schema = response.data;
+                    const imprint = await tempWallet.utils.cert(schema, json);
+                    if(event.imprint === imprint){
+                        successCallBack(eventId);
+                    }
+                    else{
+                        return callback(MAINERROR);
+                    }
+                });
         }
-      };
-      const { authentification, eventId, json, schemaUrl, uri, issuer } = data;
+        catch(err){
+            return callback(MAINERROR);
+        }
 
-      const tempWallet = Arianee().fromRandomKey();
-
-    try{
-        const event = await tempWallet.eventContract.methods.events(eventId).call();
-        axios.get(schemaUrl)
-            .then(async (response)=> {
-                const schema = response.data;
-                const imprint = await tempWallet.utils.cert(schema, json);
-                if(event.imprint === imprint){
-                    successCallBack(eventId);
-                }
-                else{
-                    return callback(MAINERROR);
-                }
-            });
-    }
-    catch(err){
-        return callback(MAINERROR);
-    }
-
-  };
-
-  const read = async (data: Payload, callback) => {
-    const successCallBack = async () => {
-      try {
-        const content = await fetchItem(tokenId);
-        return callback(null, content);
-      } catch (err) {
-        return callback(MAINERROR);
-      }
     };
 
-    const tempWallet = Arianee().fromRandomKey();
+    const read = async (data: Payload, callback) => {
+        const successCallBack = async () => {
+            try {
+                const content = await fetchItem(tokenId);
+                return callback(null, content);
+            } catch (err) {
+                return callback(MAINERROR);
+            }
+        };
 
-    const { tokenId, authentification, eventId } = data;
-    const { message, signature } = authentification;
+        const tempWallet = Arianee().fromRandomKey();
 
-    const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
-      message,
-      signature
-    );
+        const { tokenId, authentification, eventId } = data;
+        const { message, signature } = authentification;
 
-    const parsedMessage = JSON.parse(message);
+        const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
+            message,
+            signature
+        );
 
-    if (parsedMessage.tokenId !== tokenId) {
-      return callback(MAINERROR);
-    }
+        const parsedMessage = JSON.parse(message);
 
-    const isSignatureTooOld =
-      (new Date().getTime() - new Date(message.timestamp).getTime()) / 1000 >
-      300;
+        if (parsedMessage.tokenId !== tokenId) {
+            return callback(MAINERROR);
+        }
 
-    if (isSignatureTooOld) {
-      return callback(MAINERROR);
-    }
+        const isSignatureTooOld =
+            (new Date().getTime() - new Date(message.timestamp).getTime()) / 1000 >
+            300;
 
-    // Is user the owner of this certificate
-    const owner = await tempWallet.smartAssetContract.methods
-      .ownerOf(tokenId)
-      .call();
+        if (isSignatureTooOld) {
+            return callback(MAINERROR);
+        }
 
-    try {
-      await tempWallet.eventContract.methods.events(eventId).call();
-    } catch (err) {
-      return callback(MAINERROR);
-    }
+        // Is user the owner of this certificate
+        const owner = await tempWallet.smartAssetContract.methods
+            .ownerOf(tokenId)
+            .call();
 
-    if (owner === publicAddressOfSender) {
-      return successCallBack();
-    }
+        try {
+            await tempWallet.eventContract.methods.events(eventId).call();
+        } catch (err) {
+            return callback(MAINERROR);
+        }
 
-    // Is the user provide a token acces
-    for (let tokenType = 0; tokenType < 4; tokenType++) {
-      const data = await tempWallet.smartAssetContract.methods
-        .tokenHashedAccess(tokenId, tokenType)
-        .call();
+        if (owner === publicAddressOfSender) {
+            return successCallBack();
+        }
 
-      if (publicAddressOfSender === data) {
-        return successCallBack();
-      }
-    }
+        // Is the user provide a token acces
+        for (let tokenType = 0; tokenType < 4; tokenType++) {
+            const data = await tempWallet.smartAssetContract.methods
+                .tokenHashedAccess(tokenId, tokenType)
+                .call();
 
-    return callback(MAINERROR);
-  };
+            if (publicAddressOfSender === data) {
+                return successCallBack();
+            }
+        }
 
-  return {
-    [RPCNAME.event.create]: create,
-    [RPCNAME.event.read]: read
-  };
+        return callback(MAINERROR);
+    };
+
+    return {
+        [RPCNAME.event.create]: create,
+        [RPCNAME.event.read]: read
+    };
 };
 
 export { eventRPCFactory };
