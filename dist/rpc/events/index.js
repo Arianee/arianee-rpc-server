@@ -47,7 +47,7 @@ const eventRPCFactory = (fetchItem, createItem) => {
     const read = (data, callback) => __awaiter(this, void 0, void 0, function* () {
         const successCallBack = () => __awaiter(this, void 0, void 0, function* () {
             try {
-                const content = yield fetchItem(tokenId);
+                const content = yield fetchItem(eventId);
                 return callback(null, content);
             }
             catch (err) {

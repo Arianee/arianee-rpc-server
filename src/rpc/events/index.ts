@@ -72,7 +72,7 @@ const eventRPCFactory = (fetchItem,createItem) => {
     const read = async (data: Payload, callback) => {
         const successCallBack = async () => {
             try {
-                const content = await fetchItem(tokenId);
+                const content = await fetchItem(eventId);
                 return callback(null, content);
             } catch (err) {
                 return callback(MAINERROR);
