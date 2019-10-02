@@ -14,7 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@arianee/arianeejs": "0.0.6",
+    "@arianee/arianeejs": "0.0.7",
     "axios": "^0.19.0",
     "express": "^4.17.1",
     "isobjectmatchingmodel": "^1.0.1",

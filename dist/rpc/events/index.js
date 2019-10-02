@@ -7,11 +7,38 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const rpc_name_1 = require("../rpc-name");
 const error_1 = require("../errors/error");
 const arianeejs_1 = require("@arianee/arianeejs");
-const axios_1 = require("axios");
+const axios_1 = __importDefault(require("axios"));
+/*
+{ tokenId: 3838065,
+    eventId:333,
+    json:{},
+    authentification:
+     { hash:
+        '0xd5a77c8b8e828fb7669f67f726d813f1686b403a6bfc45a3cf7ca670961c9cf6',
+       signature:
+        '0x7fa947e468575a779ef02f9654a664b22c2571553571594417d8d8282b2c22047ee63781f33078b17b6da7dcb3f7c983a3f58913b2d2aa3edf209845991109201b',
+       message: '{"tokenId":3838065,"timestamp":"2019-09-13T10:56:59.264Z"}' } }
+*/
+/*interface Payload {
+    tokenId: number;
+    eventId: number;
+    json: any;
+    schemaUrl:string;
+    uri:string;
+    issuer:string;
+    authentification: {
+        hash: string;
+        signature: string;
+        message: any;
+    };
+}*/
 arianeejs_1.Arianee();
 const eventRPCFactory = (fetchItem, createItem) => {
     const create = (data, callback) => __awaiter(this, void 0, void 0, function* () {
@@ -27,12 +54,12 @@ const eventRPCFactory = (fetchItem, createItem) => {
         const { authentification, eventId, json } = data;
         const tempWallet = arianeejs_1.Arianee().fromRandomKey();
         try {
-            const event = yield tempWallet.eventContract.methods.events(eventId).call();
+            const event = yield tempWallet.eventContract.methods.getEvent(eventId).call();
             axios_1.default.get(json.$schema)
                 .then((response) => __awaiter(this, void 0, void 0, function* () {
                 const schema = response.data;
                 const imprint = yield tempWallet.utils.cert(schema, json);
-                if (event.imprint === imprint) {
+                if (event[1] === imprint) {
                     successCallBack(eventId);
                 }
                 else {
@@ -72,7 +99,7 @@ const eventRPCFactory = (fetchItem, createItem) => {
             .ownerOf(tokenId)
             .call();
         try {
-            yield tempWallet.eventContract.methods.events(eventId).call();
+            yield tempWallet.eventContract.methods.getEvent(eventId).call();
         }
         catch (err) {
             return callback(error_1.MAINERROR);

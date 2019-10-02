@@ -17,7 +17,7 @@ import axios from 'axios';
         '0x7fa947e468575a779ef02f9654a664b22c2571553571594417d8d8282b2c22047ee63781f33078b17b6da7dcb3f7c983a3f58913b2d2aa3edf209845991109201b',
        message: '{"tokenId":3838065,"timestamp":"2019-09-13T10:56:59.264Z"}' } }
 */
-interface Payload {
+/*interface Payload {
     tokenId: number;
     eventId: number;
     json: any;
@@ -29,13 +29,14 @@ interface Payload {
         signature: string;
         message: any;
     };
-}
+}*/
 
 Arianee();
 
 
 const eventRPCFactory = (fetchItem,createItem) => {
-    const create = async (data: Payload, callback) => {
+    const create = async (data: any, callback) => {
+
         const successCallBack = async (eventId) => {
             try {
                 const content = await createItem(eventId, json);
@@ -48,14 +49,13 @@ const eventRPCFactory = (fetchItem,createItem) => {
         const { authentification, eventId, json} = data;
 
         const tempWallet = Arianee().fromRandomKey();
-
         try{
-            const event = await tempWallet.eventContract.methods.events(eventId).call();
+            const event = await tempWallet.eventContract.methods.getEvent(eventId).call();
             axios.get(json.$schema)
                 .then(async (response)=> {
                     const schema = response.data;
                     const imprint = await tempWallet.utils.cert(schema, json);
-                    if(event.imprint === imprint){
+                    if(event[1] === imprint){
                         successCallBack(eventId);
                     }
                     else{
@@ -64,12 +64,13 @@ const eventRPCFactory = (fetchItem,createItem) => {
                 });
         }
         catch(err){
+
             return callback(MAINERROR);
         }
 
     };
 
-    const read = async (data: Payload, callback) => {
+    const read = async (data: any, callback) => {
         const successCallBack = async () => {
             try {
                 const content = await fetchItem(eventId);
@@ -109,7 +110,7 @@ const eventRPCFactory = (fetchItem,createItem) => {
             .call();
 
         try {
-            await tempWallet.eventContract.methods.events(eventId).call();
+            await tempWallet.eventContract.methods.getEvent(eventId).call();
         } catch (err) {
             return callback(MAINERROR);
         }
