@@ -60,7 +60,7 @@ const eventRPCFactory = (fetchItem, createItem) => {
                 const schema = response.data;
                 const imprint = yield tempWallet.utils.cert(schema, json);
                 if (event[1] === imprint) {
-                    successCallBack(eventId);
+                    return successCallBack(eventId);
                 }
                 else {
                     return callback(error_1.MAINERROR);
@@ -84,6 +84,7 @@ const eventRPCFactory = (fetchItem, createItem) => {
         const tempWallet = arianeejs_1.Arianee().fromRandomKey();
         const { tokenId, authentification, eventId } = data;
         const { message, signature } = authentification;
+        let errorCounter = 0;
         const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(message, signature);
         const parsedMessage = JSON.parse(message);
         if (parsedMessage.tokenId !== tokenId) {
@@ -94,29 +95,44 @@ const eventRPCFactory = (fetchItem, createItem) => {
         if (isSignatureTooOld) {
             return callback(error_1.MAINERROR);
         }
-        // Is user the owner of this certificate
-        const owner = yield tempWallet.smartAssetContract.methods
-            .ownerOf(tokenId)
-            .call();
+        // Is the event exist
         try {
             yield tempWallet.eventContract.methods.getEvent(eventId).call();
         }
         catch (err) {
             return callback(error_1.MAINERROR);
         }
-        if (owner === publicAddressOfSender) {
-            return successCallBack();
-        }
-        // Is the user provide a token acces
-        for (let tokenType = 0; tokenType < 4; tokenType++) {
-            const data = yield tempWallet.smartAssetContract.methods
-                .tokenHashedAccess(tokenId, tokenType)
-                .call();
-            if (publicAddressOfSender === data) {
+        // Is user the owner of this certificate
+        tempWallet.smartAssetContract.methods
+            .ownerOf(tokenId)
+            .call().then((owner) => {
+            if (owner === publicAddressOfSender) {
                 return successCallBack();
             }
+            else {
+                tryCallbackError();
+            }
+        });
+        // Is the user provide a token access
+        for (let tokenType = 0; tokenType < 4; tokenType++) {
+            tempWallet.smartAssetContract.methods
+                .tokenHashedAccess(tokenId, tokenType)
+                .call()
+                .then((data) => {
+                if (publicAddressOfSender === data) {
+                    return successCallBack();
+                }
+                else {
+                    tryCallbackError();
+                }
+            });
         }
-        return callback(error_1.MAINERROR);
+        function tryCallbackError() {
+            errorCounter++;
+            if (errorCounter === 5) {
+                return callback(error_1.MAINERROR);
+            }
+        }
     });
     return {
         [rpc_name_1.RPCNAME.event.create]: create,

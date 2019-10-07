@@ -56,7 +56,7 @@ const eventRPCFactory = (fetchItem,createItem) => {
                     const schema = response.data;
                     const imprint = await tempWallet.utils.cert(schema, json);
                     if(event[1] === imprint){
-                        successCallBack(eventId);
+                        return successCallBack(eventId);
                     }
                     else{
                         return callback(MAINERROR);
@@ -84,6 +84,7 @@ const eventRPCFactory = (fetchItem,createItem) => {
 
         const { tokenId, authentification, eventId } = data;
         const { message, signature } = authentification;
+        let errorCounter=0;
 
         const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
             message,
@@ -104,33 +105,48 @@ const eventRPCFactory = (fetchItem,createItem) => {
             return callback(MAINERROR);
         }
 
-        // Is user the owner of this certificate
-        const owner = await tempWallet.smartAssetContract.methods
-            .ownerOf(tokenId)
-            .call();
-
+        // Is the event exist
         try {
             await tempWallet.eventContract.methods.getEvent(eventId).call();
         } catch (err) {
             return callback(MAINERROR);
         }
 
-        if (owner === publicAddressOfSender) {
-            return successCallBack();
+        // Is user the owner of this certificate
+        tempWallet.smartAssetContract.methods
+            .ownerOf(tokenId)
+            .call().then((owner:string)=>{
+                if (owner === publicAddressOfSender) {
+                    return successCallBack();
+                }
+                else{
+                    tryCallbackError();
+                }
+            });
+
+        // Is the user provide a token access
+        for (let tokenType = 0; tokenType < 4; tokenType++) {
+            tempWallet.smartAssetContract.methods
+                .tokenHashedAccess(tokenId, tokenType)
+                .call()
+                .then((data:string)=>{
+                    if (publicAddressOfSender === data) {
+                        return successCallBack();
+                    }
+                    else{
+                        tryCallbackError();
+                    }
+                });
         }
 
-        // Is the user provide a token acces
-        for (let tokenType = 0; tokenType < 4; tokenType++) {
-            const data = await tempWallet.smartAssetContract.methods
-                .tokenHashedAccess(tokenId, tokenType)
-                .call();
 
-            if (publicAddressOfSender === data) {
-                return successCallBack();
+        function tryCallbackError(){
+            errorCounter++;
+            if(errorCounter === 5){
+                return callback(MAINERROR);
             }
         }
 
-        return callback(MAINERROR);
     };
 
     return {
