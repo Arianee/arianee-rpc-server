@@ -4,15 +4,17 @@
   "description": "",
   "main": "dist/",
   "scripts": {
-    "test": "jest --watchAll",
+    "test": "jest",
     "start": "nodemon dist/index.js",
     "start:express": "nodemon dist/examples/express.js",
     "tsc:watch": "tsc --watch",
     "compile": "tsc && node dist/index.js",
-    "build":"tsc",
+    "build": "tsc",
     "dev": "./node_modules/nodemon/bin/nodemon.js -e ts  --exec \"npm run compile\""
   },
-  "files":["dist"],
+  "files": [
+    "dist"
+  ],
   "author": "Arianee",
   "license": "ISC",
   "repository": {
