@@ -30,9 +30,6 @@ import axios from 'axios';
     };
 }*/
 
-Arianee();
-
-
 const eventRPCFactory = (fetchItem,createItem) => {
     const create = async (data: any, callback) => {
 
