@@ -2,12 +2,11 @@ import { RPCNAME } from "../rpc-name";
 import { isObjectMatchingModel } from "isobjectmatchingmodel";
 import { MAINERROR } from "../errors/error";
 import { Arianee } from "@arianee/arianeejs";
-import { Aria } from "@arianee/ts-contracts";
 import axios from 'axios';
 
 
 /*
-{ tokenId: 3838065,
+{ certificateId: 3838065,
     eventId:333,
     json:{},
     authentification:
@@ -15,10 +14,10 @@ import axios from 'axios';
         '0xd5a77c8b8e828fb7669f67f726d813f1686b403a6bfc45a3cf7ca670961c9cf6',
        signature:
         '0x7fa947e468575a779ef02f9654a664b22c2571553571594417d8d8282b2c22047ee63781f33078b17b6da7dcb3f7c983a3f58913b2d2aa3edf209845991109201b',
-       message: '{"tokenId":3838065,"timestamp":"2019-09-13T10:56:59.264Z"}' } }
+       message: '{"certificateId":3838065,"timestamp":"2019-09-13T10:56:59.264Z"}' } }
 */
 /*interface Payload {
-    tokenId: number;
+    certificateId: number;
     eventId: number;
     json: any;
     schemaUrl:string;
@@ -48,7 +47,8 @@ const eventRPCFactory = (fetchItem,createItem) => {
 
         const { authentification, eventId, json} = data;
 
-        const tempWallet = Arianee().fromRandomKey();
+      const arianee = await new Arianee().connectToProtocol();
+      const tempWallet = arianee.fromRandomKey();
         try{
             const event = await tempWallet.eventContract.methods.getEvent(eventId).call();
             axios.get(json.$schema)
@@ -80,9 +80,10 @@ const eventRPCFactory = (fetchItem,createItem) => {
             }
         };
 
-        const tempWallet = Arianee().fromRandomKey();
+      const arianee = await new Arianee().connectToProtocol();
+      const tempWallet = arianee.fromRandomKey();
 
-        const { tokenId, authentification, eventId } = data;
+        const { certificateId, authentification, eventId } = data;
         const { message, signature } = authentification;
         let errorCounter=0;
 
@@ -93,7 +94,7 @@ const eventRPCFactory = (fetchItem,createItem) => {
 
         const parsedMessage = JSON.parse(message);
 
-        if (parsedMessage.tokenId !== tokenId) {
+        if (parsedMessage.certificateId !== certificateId) {
             return callback(MAINERROR);
         }
 
@@ -114,7 +115,7 @@ const eventRPCFactory = (fetchItem,createItem) => {
 
         // Is user the owner of this certificate
         tempWallet.smartAssetContract.methods
-            .ownerOf(tokenId)
+            .ownerOf(certificateId)
             .call().then((owner:string)=>{
                 if (owner === publicAddressOfSender) {
                     return successCallBack();
@@ -127,7 +128,7 @@ const eventRPCFactory = (fetchItem,createItem) => {
         // Is the user provide a token access
         for (let tokenType = 0; tokenType < 4; tokenType++) {
             tempWallet.smartAssetContract.methods
-                .tokenHashedAccess(tokenId, tokenType)
+                .tokenHashedAccess(certificateId, tokenType)
                 .call()
                 .then((data:string)=>{
                     if (publicAddressOfSender === data) {
