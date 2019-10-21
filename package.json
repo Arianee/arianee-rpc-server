@@ -1,5 +1,5 @@
 {
-  "name": "@arianee/arianee-server",
+  "name": "@arianee/arianee-rpc-server",
   "version": "0.1.0",
   "description": "",
   "main": "dist/",
@@ -19,7 +19,7 @@
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Arianee/arianee-server"
+    "url": "https://github.com/Arianee/arianee-rpc-server"
   },
   "dependencies": {
     "@arianee/arianeejs": "^0.6.0",
