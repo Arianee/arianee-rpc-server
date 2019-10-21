@@ -1,1 +1,0 @@
-{"version":3,"file":"rpc-name.js","sourceRoot":"","sources":["../../src/rpc/rpc-name.ts"],"names":[],"mappings":";;AAAa,QAAA,OAAO,GAAG,MAAM,CAAC,MAAM,CAAC;IACnC,WAAW,EAAE;QACX,MAAM,EAAE,oBAAoB;QAC5B,IAAI,EAAE,kBAAkB;KACzB;IACD,KAAK,EAAC;QACJ,MAAM,EAAC,cAAc;QACrB,IAAI,EAAC,YAAY;KAClB;CACF,CAAC,CAAC"}
