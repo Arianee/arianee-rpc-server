@@ -1,7 +1,7 @@
 import { ArianeeRPCCustom } from "../arianeeRPCServer";
 const axios = require("axios");
 
-const arianeeRpcServer = new ArianeeRPCCustom()
+const arianeeRpcServer = new ArianeeRPCCustom("testnet")
   .setFetchCertificateContent(() => {
     return axios("https://jsonplaceholder.typicode.com/todos/1").then(
       response => response.data

@@ -4,7 +4,7 @@ import { MAINERROR } from "../errors/error";
 import { Arianee } from "@arianee/arianeejs";
 
 
-const certificateRPCFactory = fetchItem => {
+const certificateRPCFactory = (fetchItem, network) => {
   const create = (data, callback) => {
     callback(null, data);
   };
@@ -29,8 +29,8 @@ const certificateRPCFactory = fetchItem => {
         return callback(MAINERROR);
       }
     };
-    
-    const arianee = await new Arianee().connectToProtocol();
+
+    const arianee = await new Arianee().connectToProtocol(network);
     const tempWallet = arianee.fromRandomKey();
 
     const { certificateId, authentification } = data;
@@ -56,7 +56,7 @@ const certificateRPCFactory = fetchItem => {
     }
 
     // Is user the owner of this certificate
-    const owner = await tempWallet.smartAssetContract.methods
+    const owner = await tempWallet.contracts.smartAssetContract.methods
       .ownerOf(certificateId)
       .call();
 
@@ -66,7 +66,7 @@ const certificateRPCFactory = fetchItem => {
 
     // Is the user provide a token acces
     for (let tokenType = 0; tokenType < 4; tokenType++) {
-      const data = await tempWallet.smartAssetContract.methods
+      const data = await tempWallet.contracts.smartAssetContract.methods
         .tokenHashedAccess(certificateId, tokenType)
         .call();
 

@@ -30,7 +30,7 @@ import axios from 'axios';
     };
 }*/
 
-const eventRPCFactory = (fetchItem,createItem) => {
+const eventRPCFactory = (fetchItem,createItem, network) => {
     const create = async (data: any, callback) => {
 
         const successCallBack = async (eventId) => {
@@ -44,10 +44,10 @@ const eventRPCFactory = (fetchItem,createItem) => {
 
         const { authentification, eventId, json} = data;
 
-      const arianee = await new Arianee().connectToProtocol();
+      const arianee = await new Arianee().connectToProtocol(network);
       const tempWallet = arianee.fromRandomKey();
         try{
-            const event = await tempWallet.eventContract.methods.getEvent(eventId).call();
+            const event = await tempWallet.contracts.eventContract.methods.getEvent(eventId).call();
             axios.get(json.$schema)
                 .then(async (response)=> {
                     const schema = response.data;
@@ -77,7 +77,7 @@ const eventRPCFactory = (fetchItem,createItem) => {
             }
         };
 
-      const arianee = await new Arianee().connectToProtocol();
+      const arianee = await new Arianee().connectToProtocol(network);
       const tempWallet = arianee.fromRandomKey();
 
         const { certificateId, authentification, eventId } = data;
@@ -105,13 +105,13 @@ const eventRPCFactory = (fetchItem,createItem) => {
 
         // Is the event exist
         try {
-            await tempWallet.eventContract.methods.getEvent(eventId).call();
+            await tempWallet.contracts.eventContract.methods.getEvent(eventId).call();
         } catch (err) {
             return callback(MAINERROR);
         }
 
         // Is user the owner of this certificate
-        tempWallet.smartAssetContract.methods
+        tempWallet.contracts.smartAssetContract.methods
             .ownerOf(certificateId)
             .call().then((owner:string)=>{
                 if (owner === publicAddressOfSender) {
@@ -124,7 +124,7 @@ const eventRPCFactory = (fetchItem,createItem) => {
 
         // Is the user provide a token access
         for (let tokenType = 0; tokenType < 4; tokenType++) {
-            tempWallet.smartAssetContract.methods
+            tempWallet.contracts.smartAssetContract.methods
                 .tokenHashedAccess(certificateId, tokenType)
                 .call()
                 .then((data:string)=>{
