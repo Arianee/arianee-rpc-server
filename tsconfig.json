@@ -1,14 +1,21 @@
 {
-    "compilerOptions": {
-      "module": "commonjs",
-      "target": "es2016",
-      "noImplicitAny": false,
-      "sourceMap": true,
-      "declaration": true,
-      "pretty": true,
-      "outDir": "./dist",
-      "esModuleInterop": true
-    },
+  "compilerOptions": {
+    "experimentalDecorators": true,
+    "outDir": "./dist",
+    "noImplicitAny": false,
+    "sourceMap": true,
+    "declaration": true,
+    "target": "es5",
+    "esModuleInterop": true,
+    "emitDecoratorMetadata": true,
+    "lib": [
+      "es5",
+      "es2017",
+      "dom"
+    ],
+    "baseUrl": "src",
+    "module": "commonjs"
+  },
     "include": [
       "./src/"
     ],

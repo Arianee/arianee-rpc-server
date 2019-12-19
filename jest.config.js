@@ -1,11 +1,12 @@
 module.exports = {
     "roots": [
-        "<rootDir>/src"
+        "<rootDir>/src",
+        "<rootDir>/e2e",
     ],
+    "testEnvironment": "jest-environment-node",
     "transform": {
         "^.+\\.tsx?$": "ts-jest"
     },
-    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$",
     "moduleFileExtensions": [
         "ts",
         "tsx",
@@ -14,4 +15,5 @@ module.exports = {
         "json",
         "node"
     ],
+    setupFilesAfterEnv: ['./e2e/setup.ts'],
 }

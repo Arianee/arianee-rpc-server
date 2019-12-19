@@ -1,5 +1,7 @@
 import * as jayson from "jayson";
 import { RPCMethods } from "./rpc";
+import {AsyncFunc} from "./rpc/models/func";
+
 
 export class ArianeeRPCCustom {
   private certificateRPC;
@@ -10,13 +12,13 @@ export class ArianeeRPCCustom {
     this.network = network;
   }
 
-  public setFetchCertificateContent(func) {
-    this.certificateRPC = RPCMethods.certificateRPCFactory(func, this.network);
+  public setFetchCertificateContent(fetch:AsyncFunc,create:AsyncFunc) {
+    this.certificateRPC = RPCMethods.certificateRPCFactory(fetch,create, this.network);
     return this;
   }
 
-  public setFetchEventContent(funcFetch, funcCreate) {
-    this.eventRPC = RPCMethods.eventRPCFactory(funcFetch, funcCreate, this.network);
+  public setFetchEventContent(fetch:AsyncFunc, create:AsyncFunc) {
+    this.eventRPC = RPCMethods.eventRPCFactory(fetch, create, this.network);
     return this;
   }
 
