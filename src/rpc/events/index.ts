@@ -1,37 +1,12 @@
-import { RPCNAME } from "../rpc-name";
-import { isObjectMatchingModel } from "isobjectmatchingmodel";
-import { MAINERROR } from "../errors/error";
-import { Arianee } from "@arianee/arianeejs";
+import {RPCNAME} from "../rpc-name";
+import {MAINERROR} from "../errors/error";
+import {Arianee} from "@arianee/arianeejs";
 import axios from 'axios';
+import {EventPayload, EventPayloadCreate} from "../models/events";
 
-
-/*
-{ certificateId: 3838065,
-    eventId:333,
-    json:{},
-    authentification:
-     { hash:
-        '0xd5a77c8b8e828fb7669f67f726d813f1686b403a6bfc45a3cf7ca670961c9cf6',
-       signature:
-        '0x7fa947e468575a779ef02f9654a664b22c2571553571594417d8d8282b2c22047ee63781f33078b17b6da7dcb3f7c983a3f58913b2d2aa3edf209845991109201b',
-       message: '{"certificateId":3838065,"timestamp":"2019-09-13T10:56:59.264Z"}' } }
-*/
-/*interface Payload {
-    certificateId: number;
-    eventId: number;
-    json: any;
-    schemaUrl:string;
-    uri:string;
-    issuer:string;
-    authentification: {
-        hash: string;
-        signature: string;
-        message: any;
-    };
-}*/
 
 const eventRPCFactory = (fetchItem,createItem, network) => {
-    const create = async (data: any, callback) => {
+    const create = async (data: EventPayloadCreate, callback) => {
 
         const successCallBack = async (eventId) => {
             try {
@@ -42,9 +17,9 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
             }
         };
 
-        const { authentification, eventId, json} = data;
+        const { eventId, json} = data;
 
-      const arianee = await new Arianee().connectToProtocol(network);
+      const arianee = await new Arianee().init(network);
       const tempWallet = arianee.fromRandomKey();
         try{
             const event = await tempWallet.contracts.eventContract.methods.getEvent(eventId).call();
@@ -67,7 +42,7 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
 
     };
 
-    const read = async (data: any, callback) => {
+    const read = async (data: EventPayload, callback) => {
         const successCallBack = async () => {
             try {
                 const content = await fetchItem(eventId);

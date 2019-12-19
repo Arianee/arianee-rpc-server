@@ -1,26 +1,69 @@
-import { RPCNAME } from "../rpc-name";
-import { isObjectMatchingModel } from "isobjectmatchingmodel";
-import { MAINERROR } from "../errors/error";
-import { Arianee } from "@arianee/arianeejs";
+import {RPCNAME} from "../rpc-name";
+import {MAINERROR} from "../errors/error";
+import {Arianee} from "@arianee/arianeejs";
+import {CertificatePayload, CertificatePayloadCreate} from "../models/certificates";
+import {SyncFunc} from "../models/func";
+import axios from 'axios';
+
+const certificateRPCFactory = (fetchItem,createItem, network) => {
+
+  /**
+   * Create a certificate content in database
+   * @param data
+   * @param callback
+   */
+  const create = async (data:CertificatePayloadCreate, callback:SyncFunc) => {
+    const { certificateId, json } = data;
+
+    const successCallBack = async () => {
+      try {
+        const content = await createItem(certificateId,json);
+        return callback(null, content);
+      } catch (err) {
+        return callback(MAINERROR);
+      }
+    };
 
 
-const certificateRPCFactory = (fetchItem, network) => {
-  const create = (data, callback) => {
-    callback(null, data);
+
+    const arianee = await new Arianee().init(network);
+    const tempWallet = arianee.fromRandomKey();
+
+    let tokenImprint,res;
+    try{
+
+    tokenImprint = await tempWallet.contracts.smartAssetContract.methods
+        .tokenImprint(certificateId.toString())
+        .call();
+
+    res = await axios(
+        json.$schema
+    );
+    }catch(e){
+      return callback(MAINERROR);
+    }
+
+    const certificateSchema=res.data;
+
+    const hash = await tempWallet.utils.cert(
+        certificateSchema,
+        json
+    );
+
+    if(hash===tokenImprint){
+      return successCallBack();
+    }
+
+    return callback(MAINERROR);
   };
 
-  /*
- { certificateId: 3838065,
-  authentification:
-   { hash:
-      '0xd5a77c8b8e828fb7669f67f726d813f1686b403a6bfc45a3cf7ca670961c9cf6',
-     signature:
-      '0x7fa947e468575a779ef02f9654a664b22c2571553571594417d8d8282b2c22047ee63781f33078b17b6da7dcb3f7c983a3f58913b2d2aa3edf209845991109201b',
-     message: '{"certificateId":3838065,"timestamp":"2019-09-13T10:56:59.264Z"}' } }
 
-*/
-
-  const read = async (data, callback) => {
+  /**
+   * Read a certificate in database
+   * @param data
+   * @param callback
+   */
+  const read = async (data:CertificatePayload, callback:SyncFunc) => {
     const successCallBack = async () => {
       try {
         const content = await fetchItem(certificateId);
@@ -30,7 +73,7 @@ const certificateRPCFactory = (fetchItem, network) => {
       }
     };
 
-    const arianee = await new Arianee().connectToProtocol(network);
+    const arianee = await new Arianee().init(network);
     const tempWallet = arianee.fromRandomKey();
 
     const { certificateId, authentification } = data;
@@ -78,25 +121,10 @@ const certificateRPCFactory = (fetchItem, network) => {
     return callback(MAINERROR);
   };
 
-  const HELLOWORLD = function(args, callback) {
-    const neededArguments = {
-      a: "",
-      b: ""
-    };
-
-    console.assert(
-      isObjectMatchingModel(neededArguments, args),
-      "wrong paramters"
-    );
-
-    const { a, b } = args;
-    callback(null, a + b);
-  };
 
   return {
     [RPCNAME.certificate.create]: create,
-    [RPCNAME.certificate.read]: read,
-    add: HELLOWORLD
+    [RPCNAME.certificate.read]: read
   };
 };
 
