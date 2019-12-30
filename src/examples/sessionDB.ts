@@ -5,7 +5,7 @@ const certificatesDB={};
 const eventsDB={}
 
 export const SessionDBRPC = (network=NETWORK.arianeeTestnet)=> new ArianeeRPCCustom(network)
-    .setFetchCertificateContent(
+    .setCertificateContentMethods(
         (certificateid:string)=>{
       return Promise.resolve(certificatesDB[certificateid])
     },
@@ -13,7 +13,7 @@ export const SessionDBRPC = (network=NETWORK.arianeeTestnet)=> new ArianeeRPCCus
       certificatesDB[certificateid] = data;
       return Promise.resolve();
     })
-    .setFetchEventContent(
+    .setEventContentMethods(
         (certificateid)=>{
       return Promise.resolve(eventsDB[certificateid])
     },
