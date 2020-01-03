@@ -1,9 +1,9 @@
 import {RPCNAME} from "../rpc-name";
-import {MAINERROR} from "../errors/error";
 import {Arianee} from "@arianee/arianeejs";
 import {CertificatePayload, CertificatePayloadCreate} from "../models/certificates";
 import {SyncFunc} from "../models/func";
 import axios from 'axios';
+import {ErrorEnum, getError} from "../errors/error";
 
 const certificateRPCFactory = (fetchItem,createItem, network) => {
 
@@ -20,7 +20,7 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
         const content = await createItem(certificateId,json);
         return callback(null, content);
       } catch (err) {
-        return callback(MAINERROR);
+        return callback(getError(ErrorEnum.CALLBACKIMPLEMENTATION));
       }
     };
 
@@ -40,7 +40,7 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
         json.$schema
     );
     }catch(e){
-      return callback(MAINERROR);
+      return callback(getError(ErrorEnum.SIGNATURETOOOLD));
     }
 
     const certificateSchema=res.data;
@@ -52,9 +52,10 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
 
     if(hash===tokenImprint){
       return successCallBack();
+    }else{
+      return callback(getError(ErrorEnum.WRONGIMPRINT));
     }
 
-    return callback(MAINERROR);
   };
 
 
@@ -69,7 +70,7 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
         const content = await fetchItem(certificateId);
         return callback(null, content);
       } catch (err) {
-        return callback(MAINERROR);
+        return callback(getError(ErrorEnum.MAINERROR));
       }
     };
 
@@ -87,7 +88,7 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
     const parsedMessage = JSON.parse(message);
 
     if (parsedMessage.certificateId !== certificateId) {
-      return callback(MAINERROR);
+      return callback(getError(ErrorEnum.WRONGCERTIFICATEID));
     }
 
     const isSignatureTooOld =
@@ -95,7 +96,7 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
       300;
 
     if (isSignatureTooOld) {
-      return callback(MAINERROR);
+      return callback(getError(ErrorEnum.SIGNATURETOOOLD));
     }
 
     // Is user the owner of this certificate
@@ -118,7 +119,7 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
       }
     }
 
-    return callback(MAINERROR);
+    return callback(getError(ErrorEnum.MAINERROR));
   };
 
 

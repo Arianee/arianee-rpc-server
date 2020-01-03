@@ -7,7 +7,7 @@
     "test": "npm run build && jest --runInBand",
     "test:watch": "MODE=dev jest --watch",
     "start": "nodemon dist/index.js",
-    "start:express": "nodemon dist/examples/express.example.js",
+    "start:express": "DEBUG=true nodemon dist/examples/express.example.js",
     "tsc:watch": "tsc --watch",
     "compile": "tsc && node dist/index.js",
     "build": "tsc",
