@@ -53,6 +53,10 @@ app.post("/rpc",rpcServer);
 ```
 
 
+### DEBUG
+
+process.env.DEBUG = true
+
 ## Contributing
 
 Your contribution are welcome if they comply to the following requirements:

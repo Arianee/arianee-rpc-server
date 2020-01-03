@@ -1,8 +1,8 @@
 import {RPCNAME} from "../rpc-name";
-import {MAINERROR} from "../errors/error";
 import {Arianee} from "@arianee/arianeejs";
 import axios from 'axios';
 import {EventPayload, EventPayloadCreate} from "../models/events";
+import {ErrorEnum, getError} from "../errors/error";
 
 
 const eventRPCFactory = (fetchItem,createItem, network) => {
@@ -13,7 +13,7 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
                 const content = await createItem(eventId, json);
                 return callback(null, content);
             } catch (err) {
-                return callback(MAINERROR);
+                return callback(getError(ErrorEnum.MAINERROR));
             }
         };
 
@@ -31,13 +31,15 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
                         return successCallBack(eventId);
                     }
                     else{
-                        return callback(MAINERROR);
+                        return callback(getError(ErrorEnum.MAINERROR));
+
                     }
                 });
         }
         catch(err){
 
-            return callback(MAINERROR);
+            return callback(getError(ErrorEnum.MAINERROR));
+
         }
 
     };
@@ -48,7 +50,8 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
                 const content = await fetchItem(eventId);
                 return callback(null, content);
             } catch (err) {
-                return callback(MAINERROR);
+                return callback(getError(ErrorEnum.MAINERROR));
+
             }
         };
 
@@ -67,7 +70,8 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
         const parsedMessage = JSON.parse(message);
 
         if (parsedMessage.certificateId !== certificateId) {
-            return callback(MAINERROR);
+            return callback(getError(ErrorEnum.MAINERROR));
+
         }
 
         const isSignatureTooOld =
@@ -75,14 +79,15 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
             300;
 
         if (isSignatureTooOld) {
-            return callback(MAINERROR);
+            return callback(getError(ErrorEnum.MAINERROR));
+
         }
 
         // Is the event exist
         try {
             await tempWallet.contracts.eventContract.methods.getEvent(eventId).call();
         } catch (err) {
-            return callback(MAINERROR);
+            return callback(getError(ErrorEnum.MAINERROR));
         }
 
         // Is user the owner of this certificate
@@ -116,7 +121,7 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
         function tryCallbackError(){
             errorCounter++;
             if(errorCounter === 5){
-                return callback(MAINERROR);
+                return callback(getError(ErrorEnum.MAINERROR));
             }
         }
 

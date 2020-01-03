@@ -1,8 +1,12 @@
 import * as jayson from "jayson";
 import { RPCMethods } from "./rpc";
 import {AsyncFunc} from "./rpc/models/func";
-import {deprecated} from "./libs/deprecated-decorator";
+import {isDebug} from "./rpc/libs/isDebugMode";
 
+if(isDebug) {
+  console.warn('!!!!!!!!!!!!!!!!!!!!!!')
+  console.warn('YOU ARE IN DEBUG MODE. DO NOT USE IN PRODUCTION. It is a security breach')
+}
 export class ArianeeRPCCustom {
   private certificateRPC;
   private eventRPC;
@@ -27,9 +31,9 @@ export class ArianeeRPCCustom {
    * @param fetch
    * @param create
    */
-  @deprecated('setCertificateContentMethods')
   public setFetchCertificateContent(fetch:AsyncFunc,create:AsyncFunc) {
-   return this.setCertificateContentMethods(fetch,create);
+    console.warn('setFetchCertificateContent is deprecated');
+    return this.setCertificateContentMethods(fetch,create);
   }
 
 
@@ -48,7 +52,6 @@ export class ArianeeRPCCustom {
    * @param fetch
    * @param create
    */
-  @deprecated('setCertificateContentMethods')
   public setFetchEventContent(fetch:AsyncFunc, create:AsyncFunc) {
     console.warn('setEventContentMethods is deprecated');
     return this.setEventContentMethods(fetch,create);
