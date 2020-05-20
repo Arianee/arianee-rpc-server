@@ -6,5 +6,9 @@ export const RPCNAME = Object.freeze({
   event:{
     create:'event.create',
     read:'event.read'
+  },
+  message:{
+    create:'message.create',
+    read:'message.read'
   }
 });

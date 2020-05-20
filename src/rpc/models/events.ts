@@ -1,6 +1,6 @@
-import {CertificateId} from "@arianee/arianeejs/dist/src/models/CertificateId";
+import {ArianeeTokenId} from "@arianee/arianeejs/dist/src/models/ArianeeTokenId";
 import {RPCAuthtentification} from "./authentification";
 
-export interface EventPayload { certificateId:CertificateId, eventId:string, authentification:RPCAuthtentification }
+export interface EventPayload { certificateId:ArianeeTokenId, eventId:string, authentification:RPCAuthtentification }
 export interface EventPayloadCreate extends EventPayload  {
     json:any }
