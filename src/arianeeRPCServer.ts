@@ -10,6 +10,7 @@ if(isDebug) {
 export class ArianeeRPCCustom {
   private certificateRPC;
   private eventRPC;
+  private messageRPC;
   private network;
 
   constructor(network:string){
@@ -60,11 +61,26 @@ export class ArianeeRPCCustom {
   private createServerMiddleWare() {
     const server = new jayson.Server({
       ...this.certificateRPC,
-      ...this.eventRPC
+      ...this.eventRPC,
+      ...this.messageRPC
     });
 
     return server.middleware();
   }
+
+
+  /**
+   * Set methods to fetch and create message content
+   * @param fetch
+   * @param create
+   */
+  public setMessageContentMethods(fetch:AsyncFunc, create:AsyncFunc) {
+    this.messageRPC = RPCMethods.messageRPCFactory(fetch, create, this.network);
+    return this;
+  }
+
+ 
+
 
   /**
    * Create a RPC server middleware

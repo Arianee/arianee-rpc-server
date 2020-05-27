@@ -3,8 +3,10 @@ import {NETWORK} from "@arianee/arianeejs/dist/src";
 
 const certificatesDB={};
 const eventsDB={}
+const messagesDB={}
 
-export const SessionDBRPC = (network=NETWORK.arianeeTestnet)=> new ArianeeRPCCustom(network)
+
+export const SessionDBRPC = (network=NETWORK.testnet)=> new ArianeeRPCCustom(network)
     .setCertificateContentMethods(
         (certificateid:string)=>{
       return Promise.resolve(certificatesDB[certificateid])
@@ -21,4 +23,12 @@ export const SessionDBRPC = (network=NETWORK.arianeeTestnet)=> new ArianeeRPCCus
             eventsDB[certificateid] = data;
       return Promise.resolve();
     })
+    .setMessageContentMethods(
+      (messageId)=>{
+    return Promise.resolve(messagesDB[messageId])
+  },
+      (messageId:string, data)=>{
+          messagesDB[messageId] = data;
+    return Promise.resolve();
+  })    
   .build();

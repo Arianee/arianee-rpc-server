@@ -1,6 +1,6 @@
 import {Arianee, NETWORK} from "@arianee/arianeejs/dist/src";
 import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
-const arianee$= new Arianee().init(NETWORK.arianeeTestnet);
+const arianee$= new Arianee().init(NETWORK.testnet);
 
 export const getWallet=async (num:number[]):Promise<Array<ArianeeWallet>> =>{
     const arianee=await arianee$;
