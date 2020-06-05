@@ -3,9 +3,11 @@ import {ArianeeWalletBuilder} from "@arianee/arianeejs/dist/src/core/wallet/wall
 import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
 import {certificateContent} from "./mocks/certificateContent";
 import {cloneDeep} from 'lodash';
+import {messageContent} from "./mocks/messageContent";
 
-describe('Certificate', () => {
+describe('Message', () => {
     const certificateId = 7371300;
+    let messageId = 728720;
     let arianee: ArianeeWalletBuilder;
     let wallet: ArianeeWallet;
     beforeAll(async () => {
@@ -13,7 +15,7 @@ describe('Certificate', () => {
         wallet = arianee.fromPrivateKey(process.env.privateKey)
     });
     test('should be able create content if content is equal to imprint', async (done) => {
-        await wallet.methods.storeContentInRPCServer(certificateId, certificateContent, 'http://localhost:3000/rpc');
+        await wallet.methods.storeMessage(messageId, messageContent, 'http://localhost:3000/rpc');
         expect(true).toBeTruthy();
         done()
     });
@@ -21,12 +23,11 @@ describe('Certificate', () => {
 
     test('should NOT be able create content if content is not equal to imprint', async (done) => {
         let isInError = false;
-        const certificateClone = cloneDeep(certificateContent);
-        certificateClone.name = 'anotherName';
+        const certificateClone = cloneDeep(messageContent);
+        certificateClone.title = 'anothertitle';
 
         try {
-
-            await wallet.methods.storeContentInRPCServer(certificateId, certificateClone, 'http://localhost:3000/rpc');
+            await wallet.methods.storeMessage(messageId, certificateClone, 'http://localhost:3000/rpc');
         } catch (e) {
             isInError = true;
         }
@@ -37,20 +38,16 @@ describe('Certificate', () => {
     });
 
     test('should be able get content', async (done) => {
-        await wallet.methods.storeContentInRPCServer(certificateId, certificateContent, 'http://localhost:3000/rpc');
-        const result = await wallet.methods.getCertificate(certificateId, undefined,
-            {content: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
+        await wallet.methods.storeMessage(messageId, messageContent, 'http://localhost:3000/rpc');
 
+        const result = await wallet.methods.getMessage({
+            messageId,
+            query: {content: true},
+            url: 'http://localhost:3000/rpc'
+        });
 
-        expect(result.content.data).toEqual(certificateContent);
+        expect(result.content.data).toEqual(messageContent);
         done()
 
     })
 });
-
-
-
-
-
-
-

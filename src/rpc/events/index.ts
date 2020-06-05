@@ -22,6 +22,7 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
       const arianee = await new Arianee().init(network);
       const tempWallet = arianee.fromRandomKey();
         try{
+
             const event = await tempWallet.contracts.eventContract.methods.getEvent(eventId).call();
             axios.get(json.$schema)
                 .then(async (response)=> {
