@@ -1,5 +1,6 @@
 export interface RPCAuthtentification {
-            hash: string;
-            signature: string;
-            message:any
+            hash?: string;
+            signature?: string;
+            message?:any;
+            jwt?:string;
 }

@@ -45,88 +45,87 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
 
     };
 
-    const read = async (data: EventPayload, callback) => {
-        const successCallBack = async () => {
-            try {
-                const content = await fetchItem(eventId);
-                return callback(null, content);
-            } catch (err) {
-                return callback(getError(ErrorEnum.MAINERROR));
+  const read = async (data: EventPayload, callback) => {
+    const successCallBack = async () => {
+      try {
+        const content = await fetchItem(eventId);
+        return callback(null, content);
+      } catch (err) {
+        return callback(getError(ErrorEnum.MAINERROR));
 
-            }
-        };
-
-      const arianee = await new Arianee().connectToProtocol(network);
-      const tempWallet = arianee.fromRandomKey();
-
-        const { certificateId, authentification, eventId } = data;
-        const { message, signature } = authentification;
-        let errorCounter=0;
-
-        const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
-            message,
-            signature
-        );
-
-        const parsedMessage = JSON.parse(message);
-
-        if (parsedMessage.certificateId !== certificateId) {
-            return callback(getError(ErrorEnum.MAINERROR));
-
-        }
-
-        const isSignatureTooOld =
-            (new Date().getTime() - new Date(message.timestamp).getTime()) / 1000 >
-            300;
-
-        if (isSignatureTooOld) {
-            return callback(getError(ErrorEnum.MAINERROR));
-
-        }
-
-        // Is the event exist
-        try {
-            await tempWallet.contracts.eventContract.methods.getEvent(eventId).call();
-        } catch (err) {
-            return callback(getError(ErrorEnum.MAINERROR));
-        }
-
-        // Is user the owner of this certificate
-        tempWallet.contracts.smartAssetContract.methods
-            .ownerOf(certificateId)
-            .call().then((owner:string)=>{
-                if (owner === publicAddressOfSender) {
-                    return successCallBack();
-                }
-                else{
-                    tryCallbackError();
-                }
-            });
-
-        // Is the user provide a token access
-        for (let tokenType = 0; tokenType < 4; tokenType++) {
-            tempWallet.contracts.smartAssetContract.methods
-                .tokenHashedAccess(certificateId, tokenType)
-                .call()
-                .then((data:string)=>{
-                    if (publicAddressOfSender === data) {
-                        return successCallBack();
-                    }
-                    else{
-                        tryCallbackError();
-                    }
-                });
-        }
-
-
-        function tryCallbackError(){
-            errorCounter++;
-            if(errorCounter === 5){
-                return callback(getError(ErrorEnum.MAINERROR));
-            }
-        }
-
+      }
     };
+
+    const arianee = await new Arianee().init(network);
+    const tempWallet = arianee.fromRandomKey();
+
+    const {certificateId, authentification, eventId} = data;
+    const {message, signature, jwt} = authentification;
+
+    if (jwt) {
+      const isJWTValid = await tempWallet.methods.isJWTProofValid(jwt);
+      const {payload} = await tempWallet.methods.decodeJWTProof(jwt);
+      if (isJWTValid && (payload.subId === certificateId)) {
+        return successCallBack();
+      } else {
+        return callback(getError(ErrorEnum.WRONGJWT));
+      }
+    }
+
+    if (message && signature) {
+
+      const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
+        message,
+        signature
+      );
+
+      const parsedMessage = JSON.parse(message);
+
+      if (parsedMessage.certificateId !== certificateId) {
+        return callback(getError(ErrorEnum.MAINERROR));
+
+      }
+
+      const isSignatureTooOld =
+        (new Date().getTime() - new Date(message.timestamp).getTime()) / 1000 >
+        300;
+
+      if (isSignatureTooOld) {
+        return callback(getError(ErrorEnum.MAINERROR));
+
+      }
+
+      // Is the event exist
+      try {
+        await tempWallet.contracts.eventContract.methods.getEvent(eventId).call();
+      } catch (err) {
+        return callback(getError(ErrorEnum.MAINERROR));
+      }
+
+      // Is user the owner of this certificate
+      const owner = await tempWallet.contracts.smartAssetContract.methods
+        .ownerOf(certificateId)
+        .call();
+
+      if (owner === publicAddressOfSender) {
+        return successCallBack();
+      }
+
+      // Is the user provide a token access
+      for (let tokenType = 0; tokenType < 4; tokenType++) {
+        const data = await tempWallet.contracts.smartAssetContract.methods
+          .tokenHashedAccess(certificateId, tokenType)
+          .call()
+
+        if (publicAddressOfSender === data) {
+          return successCallBack();
+        }
+      }
+    }
+
+    return callback(getError(ErrorEnum.MAINERROR));
+
+  };
 
     return {
         [RPCNAME.event.create]: create,
