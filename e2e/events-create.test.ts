@@ -16,7 +16,7 @@ describe('Event', () => {
         wallet = arianee.fromPrivateKey(process.env.privateKey)
     });
     test('should be able create content if content is equal to imprint', async (done) => {
-        await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, 'http://localhost:3000/rpc');
+        await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
         expect(true).toBeTruthy();
         done()
     });
@@ -28,7 +28,7 @@ describe('Event', () => {
         eventContentClone.title = 'anotherTitle';
 
         try {
-            await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContentClone, 'http://localhost:3000/rpc');
+            await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContentClone, `${process.env.rpcURL}`);
 
         } catch (e) {
             isInError = true;
@@ -40,7 +40,7 @@ describe('Event', () => {
     });
 
     test('should be able get content', async (done) => {
-        await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, 'http://localhost:3000/rpc');
+        await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
 
         const result = await wallet.methods.getCertificate(certificateId, undefined,
             {arianeeEvents: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});

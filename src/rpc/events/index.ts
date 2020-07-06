@@ -60,11 +60,11 @@ const eventRPCFactory = (fetchItem,createItem, network) => {
     const tempWallet = arianee.fromRandomKey();
 
     const {certificateId, authentification, eventId} = data;
-    const {message, signature, jwt} = authentification;
+    const {message, signature, bearer} = authentification;
 
-    if (jwt) {
-      const isJWTValid = await tempWallet.methods.isJWTProofValid(jwt);
-      const {payload} = await tempWallet.methods.decodeJWTProof(jwt);
+    if (bearer) {
+      const isJWTValid = await tempWallet.methods.isCertificateArianeeProofTokenValid(bearer);
+      const {payload} = await tempWallet.methods.decodeArianeeProofToken(bearer);
       if (isJWTValid && (payload.subId === certificateId)) {
         return successCallBack();
       } else {
