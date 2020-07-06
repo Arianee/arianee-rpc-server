@@ -15,7 +15,7 @@ describe('Message', () => {
         wallet = arianee.fromPrivateKey(process.env.privateKey)
     });
     test('should be able create content if content is equal to imprint', async (done) => {
-        await wallet.methods.storeMessage(messageId, messageContent, 'http://localhost:3000/rpc');
+        await wallet.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
         expect(true).toBeTruthy();
         done()
     });
@@ -27,7 +27,7 @@ describe('Message', () => {
         certificateClone.title = 'anothertitle';
 
         try {
-            await wallet.methods.storeMessage(messageId, certificateClone, 'http://localhost:3000/rpc');
+            await wallet.methods.storeMessage(messageId, certificateClone, `${process.env.rpcURL}`);
         } catch (e) {
             isInError = true;
         }
@@ -38,7 +38,7 @@ describe('Message', () => {
     });
 
     test('should be able get content', async (done) => {
-        await wallet.methods.storeMessage(messageId, messageContent, 'http://localhost:3000/rpc');
+        await wallet.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
 
         const result = await wallet.methods.getMessage({
             messageId,
