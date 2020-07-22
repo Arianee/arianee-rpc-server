@@ -19,43 +19,44 @@ export class ArianeeRPCCustom {
 
   /**
    * Set methods to fetch and create certificate content
-   * @param fetch
-   * @param create
+   * @param fetchItem
+   * @param createItem
+   * @param createWithoutValidationOnBC
    */
-  public setCertificateContentMethods(fetch:AsyncFunc,create:AsyncFunc) {
-    this.certificateRPC = RPCMethods.certificateRPCFactory(fetch,create, this.network);
+  public setCertificateContentMethods(fetchItem: AsyncFunc, createItem: AsyncFunc, createWithoutValidationOnBC?: AsyncFunc) {
+    this.certificateRPC = RPCMethods.certificateRPCFactory({
+      fetchItem,
+      createItem,
+      createWithoutValidationOnBC,
+      network: this.network
+    });
     return this;
   }
-
-  /**
-   * @deprecated use setCertificateContentMethods
-   * @param fetch
-   * @param create
-   */
-  public setFetchCertificateContent(fetch:AsyncFunc,create:AsyncFunc) {
-    console.warn('setFetchCertificateContent is deprecated');
-    return this.setCertificateContentMethods(fetch,create);
-  }
-
 
   /**
    * Set methods to fetch and create event content
    * @param fetch
    * @param create
    */
-  public setEventContentMethods(fetch:AsyncFunc, create:AsyncFunc) {
-    this.eventRPC = RPCMethods.eventRPCFactory(fetch, create, this.network);
+  public setEventContentMethods(fetchItem: AsyncFunc, createItem: AsyncFunc, createWithoutValidationOnBC?: AsyncFunc) {
+    this.eventRPC = RPCMethods.eventRPCFactory({
+      fetchItem, createItem, createWithoutValidationOnBC, network: this.network
+    });
     return this;
   }
 
   /**
-   * @deprecated use setCertificateContentMethods
+   * Set methods to fetch and create message content
    * @param fetch
    * @param create
    */
-  public setFetchEventContent(fetch:AsyncFunc, create:AsyncFunc) {
-    console.warn('setEventContentMethods is deprecated');
-    return this.setEventContentMethods(fetch,create);
+  public setMessageContentMethods(fetchItem: AsyncFunc, createItem: AsyncFunc, createWithoutValidationOnBC?: AsyncFunc) {
+    this.messageRPC = RPCMethods.messageRPCFactory(
+        {
+          fetchItem, createItem, createWithoutValidationOnBC, network: this.network
+        }
+    );
+    return this;
   }
 
   private createServerMiddleWare() {
@@ -67,19 +68,6 @@ export class ArianeeRPCCustom {
 
     return server.middleware();
   }
-
-
-  /**
-   * Set methods to fetch and create message content
-   * @param fetch
-   * @param create
-   */
-  public setMessageContentMethods(fetch:AsyncFunc, create:AsyncFunc) {
-    this.messageRPC = RPCMethods.messageRPCFactory(fetch, create, this.network);
-    return this;
-  }
-
- 
 
 
   /**

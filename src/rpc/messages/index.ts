@@ -3,45 +3,48 @@ import {Arianee} from "@arianee/arianeejs";
 import axios from 'axios';
 import {MessagePayload, MessagePayloadCreate} from "../models/messages";
 import {ErrorEnum, getError} from "../errors/error";
+import {callBackFactory} from "../libs/callBackFactory";
 
 
-const messageRPCFactory = (fetchItem, createItem, network) => {
+const messageRPCFactory = (configuration: { fetchItem, createItem, network, createWithoutValidationOnBC? }) => {
+
+    const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
+
     const create = async (data: MessagePayloadCreate, callback) => {
 
-        const successCallBack = async (messageId) => {
+        const [successCallBack, sucessCallBackWithoutValidationOnBC] = callBackFactory(callback)([
+            () => createItem(messageId, json),
+            () => createWithoutValidationOnBC(messageId, json),
+
+        ]);
+
+        const {messageId, json} = data;
+
+        const arianee = await new Arianee().init(network);
+        const tempWallet = arianee.fromRandomKey();
+
+        const message = await tempWallet.contracts.messageContract.methods.messages(messageId)
+            .call()
+            .catch(d => undefined);
+
+        if (message.imprint === '0x0000000000000000000000000000000000000000000000000000000000000000' && createWithoutValidationOnBC) {
+            return sucessCallBackWithoutValidationOnBC()
+        } else {
             try {
-                const content = await createItem(messageId, json);
-                return callback(null, content);
+                axios.get(json.$schema)
+                    .then(async (response) => {
+                        const schema = response.data;
+                        const imprint = await tempWallet.utils.cert(schema, json);
+                        if (message[0] === imprint) {
+                            return successCallBack();
+                        } else {
+                            return callback(getError(ErrorEnum.WRONGIMPRINT));
+                        }
+                    });
             } catch (err) {
-                return callback(getError(ErrorEnum.MAINERROR));
+                return callback(getError(ErrorEnum.WRONGMESSAGEID));
             }
-        };
-
-      const { messageId, json} = data;
-
-      const arianee = await new Arianee().init(network);
-      const tempWallet = arianee.fromRandomKey();
-        try{
-            const message = await tempWallet.contracts.messageContract.methods.messages(messageId).call();
-            axios.get(json.$schema)
-                .then(async (response)=> {
-                    const schema = response.data;
-                    const imprint = await tempWallet.utils.cert(schema, json);
-                    if(message[0] === imprint){
-                        return successCallBack(messageId);
-                    }
-                    else{
-                        return callback(getError(ErrorEnum.WRONGIMPRINT));
-
-                    }
-                });
         }
-        catch(err){
-
-            return callback(getError(ErrorEnum.WRONGMESSAGEID));
-
-        }
-
     };
 
     const read = async (data: MessagePayload, callback) => {
@@ -55,8 +58,8 @@ const messageRPCFactory = (fetchItem, createItem, network) => {
             }
         };
 
-      const arianee = await new Arianee().init(network);
-      const tempWallet = arianee.fromRandomKey();
+        const arianee = await new Arianee().init(network);
+        const tempWallet = arianee.fromRandomKey();
 
         const { authentification, messageId } = data;
         const { message, signature } = authentification;
@@ -77,16 +80,16 @@ const messageRPCFactory = (fetchItem, createItem, network) => {
 
         // Is the message exist
         try {
-          const arianeeMessage = await tempWallet.contracts.messageContract.methods.messages(messageId).call();
+            const arianeeMessage = await tempWallet.contracts.messageContract.methods.messages(messageId).call();
 
-          if (arianeeMessage.to !== publicAddressOfSender && arianeeMessage.sender !== publicAddressOfSender ) {
-            return callback(getError(ErrorEnum.MAINERROR));
-          } else {
-            return successCallBack();
-          }
+            if (arianeeMessage.to !== publicAddressOfSender && arianeeMessage.sender !== publicAddressOfSender) {
+                return callback(getError(ErrorEnum.MAINERROR));
+            } else {
+                return successCallBack();
+            }
 
         } catch (err) {
-          return callback(getError(ErrorEnum.MAINERROR));
+            return callback(getError(ErrorEnum.MAINERROR));
         }
 
     };

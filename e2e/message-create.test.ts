@@ -37,6 +37,14 @@ describe('Message', () => {
 
     });
 
+    test('should be able create content if messageId does not exist in bc', async (done) => {
+        const certificateClone = cloneDeep(messageContent);
+
+        await wallet.methods.storeMessage(-1, certificateClone, process.env.rpcURL);
+        expect(true).toBeTruthy();
+        done()
+    });
+
     test('should be able get content', async (done) => {
         await wallet.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
 

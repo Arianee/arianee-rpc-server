@@ -39,6 +39,18 @@ describe('Event', () => {
 
     });
 
+    test('should be able create content if tokenId or arianeeEventId does not exist on BC', async (done) => {
+        let isInError = false;
+        const eventContentClone = cloneDeep(eventContent);
+        eventContentClone.title = 'anotherTitle';
+
+        await wallet.methods.storeArianeeEvent(-1, -3, eventContentClone, `${process.env.rpcURL}`);
+
+        expect(true).toBeTruthy();
+        done()
+
+
+    });
     test('should be able get content', async (done) => {
         await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
 
