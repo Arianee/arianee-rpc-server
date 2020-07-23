@@ -43,16 +43,23 @@ describe('Certificate', () => {
 
 
         });
+
+        test('should be able to store content if tokenId does not exist in BC', async (done) => {
+            await wallet.methods.storeContentInRPCServer(-1, {}, `${process.env.rpcURL}`);
+            expect(true).toBeTruthy();
+            done()
+        })
     });
 
     describe('read', () => {
 
+
         beforeEach(async () => {
-            await wallet.methods.storeContentInRPCServer(certificateId, certificateContent, 'http://localhost:3000/rpc');
+            await wallet.methods.storeContentInRPCServer(certificateId, certificateContent, process.env.rpcURL);
         });
 
         test('owner should be able get content', async (done) => {
-        await wallet.methods.storeContentInRPCServer(certificateId, certificateContent, 'http://localhost:3000/rpc');
+        await wallet.methods.storeContentInRPCServer(certificateId, certificateContent,  process.env.rpcURL);
         const result = await wallet.methods.getCertificate(certificateId, undefined,
             {content: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
 
@@ -66,7 +73,7 @@ describe('Certificate', () => {
 
 
             const result = await notOwnerWallet.methods.getCertificate(certificateId, undefined,
-                {content: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
+                {content: true, issuer: {rpcURI:process.env.rpcURL}});
 
 
             expect(result.content).toBeUndefined();
@@ -80,7 +87,7 @@ describe('Certificate', () => {
 
 
             const result = await notOwnerWallet.methods.getCertificateFromArianeeProofToken(arianeeJWT,
-                {content: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
+                {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 
             expect(result.content.data).toEqual(certificateContent);
@@ -94,7 +101,7 @@ describe('Certificate', () => {
 
 
             const result = await notOwnerWallet.methods.getCertificateFromArianeeProofToken(unvalidArianeeJWT,
-                {content: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
+                {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 
             expect(result.content).toBeUndefined();
