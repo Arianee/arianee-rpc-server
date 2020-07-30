@@ -4,8 +4,13 @@ import {CertificatePayload, CertificatePayloadCreate} from "../models/certificat
 import {SyncFunc} from "../models/func";
 import axios from 'axios';
 import {ErrorEnum, getError} from "../errors/error";
+import {callBackFactory} from "../libs/callBackFactory";
 
-const certificateRPCFactory = (fetchItem,createItem, network) => {
+
+const certificateRPCFactory = (configuration: { fetchItem, createItem, network, createWithoutValidationOnBC? }) => {
+
+  const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
+
 
   /**
    * Create a certificate content in database
@@ -15,45 +20,57 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
   const create = async (data:CertificatePayloadCreate, callback:SyncFunc) => {
     const { certificateId, json } = data;
 
-    const successCallBack = async () => {
-      try {
-        const content = await createItem(certificateId,json);
-        return callback(null, content);
-      } catch (err) {
-        return callback(getError(ErrorEnum.CALLBACKIMPLEMENTATION));
-      }
-    };
-
-
+    const [successCallBack, successCallBackWithoutValidation] = callBackFactory(callback)(
+        [
+          () => createItem(certificateId, json),
+          () => createWithoutValidationOnBC(certificateId, json)
+        ]);
 
     const arianee = await new Arianee().init(network);
     const tempWallet = arianee.fromRandomKey();
 
     let tokenImprint,res;
-    try{
+    const isTokenIdExist: boolean = await tempWallet
+        .contracts
+        .smartAssetContract
+        .methods
+        .ownerOf(certificateId.toString())
+        .call()
+        .then(() => true)
+        .catch(() => false);
 
-    tokenImprint = await tempWallet.contracts.smartAssetContract.methods
-        .tokenImprint(certificateId.toString())
-        .call();
+    const createCertificateIfTokenIdExist = async () => {
+      try {
+        tokenImprint = await tempWallet.contracts.smartAssetContract.methods
+            .tokenImprint(certificateId.toString())
+            .call();
 
-    res = await axios(
-        json.$schema
-    );
-    }catch(e){
-      return callback(getError(ErrorEnum.SIGNATURETOOOLD));
+        res = await axios(
+            json.$schema
+        );
+      } catch (e) {
+        return callback(getError(ErrorEnum.WRONGIMPRINT));
+      }
+
+      const certificateSchema = res.data;
+
+      const hash = await tempWallet.utils.cert(
+          certificateSchema,
+          json
+      );
+
+      if (hash === tokenImprint) {
+        return successCallBack();
+      } else {
+        return callback(getError(ErrorEnum.WRONGIMPRINT));
+      }
     }
 
-    const certificateSchema=res.data;
-
-    const hash = await tempWallet.utils.cert(
-        certificateSchema,
-        json
-    );
-
-    if(hash===tokenImprint){
-      return successCallBack();
+    if (!isTokenIdExist && createWithoutValidationOnBC) {
+      return successCallBackWithoutValidation()
     }else{
-      return callback(getError(ErrorEnum.WRONGIMPRINT));
+      return createCertificateIfTokenIdExist()
+
     }
 
   };
@@ -92,8 +109,8 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
 
     if (message && signature) {
       const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
-        message,
-        signature
+          message,
+          signature
       );
 
       const parsedMessage = JSON.parse(message);
@@ -103,8 +120,8 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
       }
 
       const isSignatureTooOld =
-        (new Date().getTime() - new Date(message.timestamp).getTime()) / 1000 >
-        300;
+          (new Date().getTime() - new Date(message.timestamp).getTime()) / 1000 >
+          300;
 
       if (isSignatureTooOld) {
         return callback(getError(ErrorEnum.SIGNATURETOOOLD));
@@ -112,8 +129,8 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
 
       // Is user the owner of this certificate
       const owner = await tempWallet.contracts.smartAssetContract.methods
-        .ownerOf(certificateId)
-        .call();
+          .ownerOf(certificateId)
+          .call();
 
       if (owner === publicAddressOfSender) {
         return successCallBack();
@@ -122,8 +139,8 @@ const certificateRPCFactory = (fetchItem,createItem, network) => {
       // Is the user provide a token acces
       for (let tokenType = 0; tokenType < 4; tokenType++) {
         const data = await tempWallet.contracts.smartAssetContract.methods
-          .tokenHashedAccess(certificateId, tokenType)
-          .call();
+            .tokenHashedAccess(certificateId, tokenType)
+            .call();
 
         if (publicAddressOfSender === data) {
           return successCallBack();

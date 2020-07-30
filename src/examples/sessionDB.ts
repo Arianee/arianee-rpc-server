@@ -14,7 +14,12 @@ export const SessionDBRPC = (network=NETWORK.testnet)=> new ArianeeRPCCustom(net
         (certificateid:string, data)=>{
       certificatesDB[certificateid] = data;
       return Promise.resolve();
-    })
+        },
+        (certificateid: string, data) => {
+            certificatesDB[certificateid] = data;
+            return Promise.resolve();
+        },
+    )
     .setEventContentMethods(
         (certificateid)=>{
       return Promise.resolve(eventsDB[certificateid])
@@ -22,7 +27,12 @@ export const SessionDBRPC = (network=NETWORK.testnet)=> new ArianeeRPCCustom(net
         (certificateid:string, data)=>{
             eventsDB[certificateid] = data;
       return Promise.resolve();
-    })
+        },
+        (certificateid: string, data) => {
+            eventsDB[certificateid] = data;
+            return Promise.resolve();
+        }
+    )
     .setMessageContentMethods(
       (messageId)=>{
     return Promise.resolve(messagesDB[messageId])
@@ -30,5 +40,9 @@ export const SessionDBRPC = (network=NETWORK.testnet)=> new ArianeeRPCCustom(net
       (messageId:string, data)=>{
           messagesDB[messageId] = data;
     return Promise.resolve();
-  })    
+      },
+        (messageId: string, data) => {
+            messagesDB[messageId] = data;
+            return Promise.resolve();
+        })
   .build();
