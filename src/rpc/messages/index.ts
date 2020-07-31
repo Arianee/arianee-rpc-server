@@ -10,12 +10,29 @@ const messageRPCFactory = (configuration: { fetchItem, createItem, network, crea
 
     const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
 
+    const createItemOnce=async (messageId,json)=>{
+        const message = await fetchItem(messageId);
+        if(message===undefined){
+            return createItem(messageId, json);
+        }else{
+            throw new Error('Content already stored')
+        }
+    }
+
+    const createWithoutValidationOnBCOnce=async (messageId,json)=>{
+        const message = await fetchItem(messageId);
+        if(message===undefined){
+            return createWithoutValidationOnBC(messageId, json);
+        }else{
+            throw new Error('Content already stored')
+        }
+    };
+
     const create = async (data: MessagePayloadCreate, callback) => {
 
         const [successCallBack, sucessCallBackWithoutValidationOnBC] = callBackFactory(callback)([
-            () => createItem(messageId, json),
-            () => createWithoutValidationOnBC(messageId, json),
-
+            () => createItemOnce(messageId, json),
+            () => createWithoutValidationOnBCOnce(messageId,json),
         ]);
 
         const {messageId, json} = data;

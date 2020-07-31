@@ -4,8 +4,8 @@
   "description": "",
   "main": "dist/",
   "scripts": {
-    "test": "npm run build && start-server-and-test 'npm run start:express' http://localhost:3000 'jest'",
-    "test:watch": "jest --watch",
+    "test": "npm run build && start-server-and-test 'npm run start:express' http://localhost:3000 'jest --runInBand'",
+    "test:watch": "jest --watch --runInBand",
     "start": "nodemon dist/index.js",
     "start:express": "DEBUG=true nodemon dist/examples/express.example.js",
     "tsc:watch": "tsc --watch",

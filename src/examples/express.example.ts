@@ -5,7 +5,7 @@ console.log("port",port)
 var bodyParser = require("body-parser");
 import {SessionDBRPC} from "./sessionDB";
 
-const arianeeRpcServer = SessionDBRPC();
+let arianeeRpcServer = SessionDBRPC();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -13,6 +13,14 @@ app.use(bodyParser.json());
 app.get('/', (req, res) => {
     res.send("World");
 });
+
+app.get('/reset',(req,res)=>{
+    console.log("reset arianeeRpcServer")
+    arianeeRpcServer = SessionDBRPC();
+
+    res.send('reset done');
+})
+
 app.post("/rpc", (req, res, next) => arianeeRpcServer(req, res, next));
 
 app.listen(port, () => {

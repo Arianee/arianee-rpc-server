@@ -11,6 +11,23 @@ const certificateRPCFactory = (configuration: { fetchItem, createItem, network, 
 
   const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
 
+  const createItemOnce=async (id,json)=>{
+    const certificate = await fetchItem(id);
+    if(certificate===undefined){
+      return createItem(id, json);
+    }else{
+      throw new Error('Content already stored')
+    }
+  }
+
+  const createWithoutValidationOnBCOnce=async (id,json)=>{
+    const certificate = await fetchItem(id);
+    if(certificate===undefined){
+      return createWithoutValidationOnBC(id, json);
+    }else{
+      throw new Error('Content already stored')
+    }
+  };
 
   /**
    * Create a certificate content in database
@@ -22,8 +39,8 @@ const certificateRPCFactory = (configuration: { fetchItem, createItem, network, 
 
     const [successCallBack, successCallBackWithoutValidation] = callBackFactory(callback)(
         [
-          () => createItem(certificateId, json),
-          () => createWithoutValidationOnBC(certificateId, json)
+          () => createItemOnce(certificateId, json),
+          () => createWithoutValidationOnBCOnce(certificateId, json)
         ]);
 
     const arianee = await new Arianee().init(network);

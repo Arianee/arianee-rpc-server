@@ -3,6 +3,7 @@ import {ArianeeWalletBuilder} from "@arianee/arianeejs/dist/src/core/wallet/wall
 import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
 import {certificateContent} from "./mocks/certificateContent";
 import {cloneDeep} from 'lodash';
+import axios from 'axios';
 
 describe('Certificate', () => {
     const certificateId = 7371300;
@@ -11,6 +12,10 @@ describe('Certificate', () => {
     beforeAll(async () => {
         arianee = await new Arianee().init(NETWORK.testnet);
         wallet = arianee.fromPrivateKey(process.env.privateKey)
+    });
+
+    beforeEach(async () => {
+        await axios(process.env.resetURL);
     });
 
     describe('create content', () => {
@@ -49,20 +54,34 @@ describe('Certificate', () => {
             expect(true).toBeTruthy();
             done()
         })
+
+        test('should be able to store content ONCE if tokenId does not exist in BC', async (done) => {
+            await wallet.methods.storeContentInRPCServer(-1, {}, `${process.env.rpcURL}`);
+            expect(true).toBeTruthy();
+
+            let inError = false;
+            try {
+                // not allowed to create if already exist
+                await wallet.methods.storeContentInRPCServer(-1, {}, `${process.env.rpcURL}`);
+            } catch (e) {
+                inError = true;
+            }
+
+            expect(inError).toBeTruthy();
+            done()
+        })
     });
 
     describe('read', () => {
-
 
         beforeEach(async () => {
             await wallet.methods.storeContentInRPCServer(certificateId, certificateContent, process.env.rpcURL);
         });
 
         test('owner should be able get content', async (done) => {
-        await wallet.methods.storeContentInRPCServer(certificateId, certificateContent,  process.env.rpcURL);
-        const result = await wallet.methods.getCertificate(certificateId, undefined,
-            {content: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
 
+            const result = await wallet.methods.getCertificate(certificateId, undefined,
+            {content: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
 
         expect(result.content.data).toEqual(certificateContent);
         done()

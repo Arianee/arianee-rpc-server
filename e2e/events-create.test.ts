@@ -4,6 +4,7 @@ import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
 import {certificateContent} from "./mocks/certificateContent";
 import {cloneDeep} from 'lodash';
 import {eventContent} from "./mocks/eventContent";
+import axios from 'axios';
 
 describe('Event', () => {
     const arianeeEventId = 4254908;
@@ -15,6 +16,11 @@ describe('Event', () => {
         arianee = await new Arianee().init(NETWORK.testnet);
         wallet = arianee.fromPrivateKey(process.env.privateKey)
     });
+
+    beforeEach(async () => {
+        await axios(process.env.resetURL);
+    });
+
     test('should be able create content if content is equal to imprint', async (done) => {
         await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
         expect(true).toBeTruthy();
@@ -51,6 +57,29 @@ describe('Event', () => {
 
 
     });
+
+    test('should be able to store content ONCE if arianeeEventId does not exist in BC', async (done) => {
+        let isInError = false;
+        const eventContentClone = cloneDeep(eventContent);
+        eventContentClone.title = 'anotherTitle';
+
+        await wallet.methods.storeArianeeEvent(-1, -3, eventContentClone, `${process.env.rpcURL}`);
+
+        expect(true).toBeTruthy();
+
+        let inError = false;
+        try {
+            // not allowed to create if already exist
+            await wallet.methods.storeArianeeEvent(-1, -3, eventContentClone, `${process.env.rpcURL}`);
+        } catch (e) {
+            inError = true;
+        }
+
+        expect(inError).toBeTruthy();
+        done()
+    })
+
+
     test('should be able get content', async (done) => {
         await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
 

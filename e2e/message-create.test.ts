@@ -1,9 +1,11 @@
 import {Arianee, NETWORK} from "@arianee/arianeejs/dist/src";
 import {ArianeeWalletBuilder} from "@arianee/arianeejs/dist/src/core/wallet/walletBuilder";
 import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
-import {certificateContent} from "./mocks/certificateContent";
 import {cloneDeep} from 'lodash';
 import {messageContent} from "./mocks/messageContent";
+
+import axios from 'axios';
+
 
 describe('Message', () => {
     const certificateId = 7371300;
@@ -14,6 +16,11 @@ describe('Message', () => {
         arianee = await new Arianee().init(NETWORK.testnet);
         wallet = arianee.fromPrivateKey(process.env.privateKey)
     });
+
+    beforeEach(async () => {
+        await axios(process.env.resetURL);
+    });
+
     test('should be able create content if content is equal to imprint', async (done) => {
         await wallet.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
         expect(true).toBeTruthy();
@@ -42,6 +49,24 @@ describe('Message', () => {
 
         await wallet.methods.storeMessage(-1, certificateClone, process.env.rpcURL);
         expect(true).toBeTruthy();
+        done()
+    });
+
+    test('should be able create content ONCE if messageId does not exist in bc', async (done) => {
+        const certificateClone = cloneDeep(messageContent);
+
+        // allowed to create ONCE
+        await wallet.methods.storeMessage(-2, certificateClone, process.env.rpcURL);
+
+        let inError=false;
+        try{
+            // not allowed to create if already exist
+            await wallet.methods.storeMessage(-2, certificateClone, process.env.rpcURL);
+        }catch(e){
+            inError=true;
+        }
+
+        expect(inError).toBeTruthy()
         done()
     });
 

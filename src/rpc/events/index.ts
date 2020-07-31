@@ -10,11 +10,30 @@ const eventRPCFactory = (configuration: { fetchItem, createItem, network, create
 
     const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
 
+
+    const createItemOnce=async (id,json)=>{
+        const arianeeEvent = await fetchItem(id);
+        if(arianeeEvent===undefined){
+            return createItem(id, json);
+        }else{
+            throw new Error('Content already stored')
+        }
+    }
+
+    const createWithoutValidationOnBCOnce=async (id,json)=>{
+        const arianeeEvent = await fetchItem(id);
+        if(arianeeEvent===undefined){
+            return createWithoutValidationOnBC(id, json);
+        }else{
+            throw new Error('Content already stored')
+        }
+    };
+
     const create = async (data: EventPayloadCreate, callback) => {
 
         const [successCallBack, successCallbackWithoutValidation] = callBackFactory(callback)([
-            () => createItem(eventId, json),
-            () => createWithoutValidationOnBC(eventId, json),
+            () => createItemOnce(eventId, json),
+            () => createWithoutValidationOnBCOnce(eventId, json),
         ]);
 
         const { eventId, json} = data;
