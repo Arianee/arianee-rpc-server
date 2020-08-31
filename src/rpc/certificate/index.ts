@@ -45,6 +45,12 @@ const certificateRPCFactory = (configuration: { fetchItem, createItem, network, 
             .tokenImprint(certificateId.toString())
             .call();
 
+        // case of reseved token
+        if (tokenImprint === '0x0000000000000000000000000000000000000000000000000000000000000000'
+            && createWithoutValidationOnBC) {
+          return successCallBackWithoutValidation();
+        }
+
         res = await axios(
             json.$schema
         );
