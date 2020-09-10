@@ -82,11 +82,11 @@ describe('Certificate', () => {
 
         test('valid arianeeJWT should be able to get content', async (done) => {
 
-            const arianeeJWT = wallet.methods.createCertificateArianeeProofToken(certificateId);
+            const arianeeJWT = wallet.methods.createCertificateArianeeAccessToken(certificateId);
             const notOwnerWallet = arianee.fromRandomMnemonic();
 
 
-            const result = await notOwnerWallet.methods.getCertificateFromArianeeProofToken(arianeeJWT,
+            const result = await notOwnerWallet.methods.getCertificateFromArianeeAccessToken(arianeeJWT,
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 
@@ -96,11 +96,11 @@ describe('Certificate', () => {
 
         test('unvalid arianeeJWT should NOT be able to get content', async (done) => {
 
-            const unvalidArianeeJWT = arianee.fromRandomMnemonic().methods.createCertificateArianeeProofToken(certificateId);
+            const unvalidArianeeJWT = arianee.fromRandomMnemonic().methods.createCertificateArianeeAccessToken(certificateId);
             const notOwnerWallet = arianee.fromRandomMnemonic();
 
 
-            const result = await notOwnerWallet.methods.getCertificateFromArianeeProofToken(unvalidArianeeJWT,
+            const result = await notOwnerWallet.methods.getCertificateFromArianeeAccessToken(unvalidArianeeJWT,
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 

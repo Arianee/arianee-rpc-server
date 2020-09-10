@@ -65,8 +65,8 @@ const eventRPCFactory = (configuration: { fetchItem, createItem, network, create
         const {message, signature, bearer} = authentification;
 
         if (bearer) {
-            const isJWTValid = await tempWallet.methods.isCertificateArianeeProofTokenValid(bearer);
-            const {payload} = await tempWallet.methods.decodeArianeeProofToken(bearer);
+            const isJWTValid = await tempWallet.methods.isCertificateArianeeAccessTokenValid(bearer);
+            const {payload} = await tempWallet.methods.decodeArianeeAccessToken(bearer);
             if (isJWTValid && (payload.subId === certificateId)) {
                 return successCallBack();
             } else {
