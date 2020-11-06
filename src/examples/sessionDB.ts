@@ -2,8 +2,9 @@ import { ArianeeRPCCustom } from "../arianeeRPCServer";
 import {NETWORK} from "@arianee/arianeejs/dist/src";
 
 const certificatesDB={};
-const eventsDB={}
-const messagesDB={}
+const eventsDB={};
+const messagesDB={};
+const updateDB={};
 
 
 export const SessionDBRPC = (network=NETWORK.testnet)=> new ArianeeRPCCustom(network)
@@ -45,4 +46,16 @@ export const SessionDBRPC = (network=NETWORK.testnet)=> new ArianeeRPCCustom(net
             messagesDB[messageId] = data;
             return Promise.resolve();
         })
+  .setUpdateContentMethods(
+    (updateId)=>{
+      return Promise.resolve(updateDB[updateId])
+    },
+    (updateId:string, data)=>{
+      updateDB[updateId] = data;
+      return Promise.resolve();
+    },
+    (updateId: string, data) => {
+      updateDB[updateId] = data;
+      return Promise.resolve();
+    })
   .build();
