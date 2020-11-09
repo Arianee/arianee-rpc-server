@@ -2,6 +2,7 @@ import * as jayson from "jayson";
 import { RPCMethods } from "./rpc";
 import {AsyncFunc} from "./rpc/models/func";
 import {isDebug} from "./rpc/libs/isDebugMode";
+import {updateRPCFactory} from "./rpc/update";
 
 if(isDebug) {
   console.warn('!!!!!!!!!!!!!!!!!!!!!!')
@@ -12,6 +13,7 @@ export class ArianeeRPCCustom {
   private eventRPC;
   private messageRPC;
   private network;
+  private updateRPC;
 
   constructor(network:string){
     this.network = network;
@@ -59,11 +61,21 @@ export class ArianeeRPCCustom {
     return this;
   }
 
+  public setUpdateContentMethods(fetchItem: AsyncFunc, createItem: AsyncFunc, createWithoutValidationOnBC?: AsyncFunc) {
+    this.updateRPC = RPCMethods.updateRPCFactory(
+      {
+        fetchItem, createItem, createWithoutValidationOnBC, network: this.network
+      }
+    )
+    return this;
+  }
+
   private createServerMiddleWare() {
     const server = new jayson.Server({
       ...this.certificateRPC,
       ...this.eventRPC,
-      ...this.messageRPC
+      ...this.messageRPC,
+      ...this.updateRPC
     });
 
     return server.middleware();
