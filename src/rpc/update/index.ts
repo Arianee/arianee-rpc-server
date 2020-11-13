@@ -31,12 +31,13 @@ const updateRPCFactory = (configuration: { fetchItem, createItem, network, creat
       }
 
       const hash = await tempWallet.utils.calculateImprint(json)
-
       if(hash === update[1]){
         return successCallBack();
+      } else if (successCallBackWithoutValidation) {
+        return successCallBackWithoutValidation();
       }
 
-
+      return callback(getError(ErrorEnum.MAINERROR));
     }
     catch(e){
       return callback(getError(ErrorEnum.NOCERTIFICATE));
