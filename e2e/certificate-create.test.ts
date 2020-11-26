@@ -5,24 +5,66 @@ import {certificateContent} from "./mocks/certificateContent";
 import {cloneDeep} from 'lodash';
 
 describe('Certificate', () => {
-    const certificateId = 7371300;
+    let certificateId;
+    let passphrase;
     let arianee: ArianeeWalletBuilder;
-    let wallet: ArianeeWallet;
-    beforeAll(async () => {
-        arianee = await new Arianee().init(NETWORK.testnet);
-        wallet = arianee.fromPrivateKey(process.env.privateKey)
-    });
+    let walletOwner:  ArianeeWallet;
+    let walletIssuer:ArianeeWallet;
+    let walletRandom:ArianeeWallet;
 
+    beforeAll(async () => {
+        try {
+
+            arianee = await new Arianee()
+                .setStore({
+                    // be sure to not get from cache
+                    hasItem: () => Promise.resolve(false),
+                    getStoreItem:(key)=>Promise.resolve(undefined),
+                    setStoreItem:(key,value)=>Promise.resolve(undefined)
+                })
+                .init(NETWORK.testnet);
+
+            walletIssuer = arianee.fromPrivateKey(process.env.privateKey);
+            walletOwner =  arianee.fromRandomMnemonic();
+            walletRandom =  arianee.fromRandomMnemonic();
+            console.info("preparing wallets:FAUCET");
+            const [result] = await Promise.all([
+                walletIssuer.methods.createCertificate({
+                    content: certificateContent
+                }),
+                walletIssuer.methods.requestPoa(),
+                walletIssuer.methods.requestAria(),
+                walletOwner.methods.requestPoa(),
+            ]);
+
+            walletIssuer.methods.buyCredits('certificate', 2);
+
+            console.info("preparing wallets: creating certificate");
+
+            certificateId = result.certificateId;
+            passphrase = result.passphrase;
+
+            console.info(`preparing wallets: DONE ${certificateId} ${passphrase}`);
+
+            console.log('preparing wallets: requesting ownership');
+            await Promise.all([
+                walletOwner.methods.requestCertificateOwnership(certificateId, passphrase),
+                walletRandom.methods.storeContentInRPCServer(certificateId, certificateContent, process.env.rpcURL)
+            ])
+
+        } catch (e) {
+            console.error(e);
+        }
+    });
     describe('create content', () => {
 
-        test('should be able create content if content is equal to imprint', async (done) => {
-            await wallet.methods.storeContentInRPCServer(certificateId, certificateContent, `${process.env.rpcURL}`);
+        test(' should be able create content if content is equal to imprint', async (done) => {
+            await walletRandom.methods.storeContentInRPCServer(certificateId, certificateContent, `${process.env.rpcURL}`);
             expect(true).toBeTruthy();
             done()
         });
-
         test('should be able create content if content is equal to imprint (even if not owner)', async (done) => {
-            await arianee.fromRandomMnemonic().methods.storeContentInRPCServer(certificateId, certificateContent, `${process.env.rpcURL}`);
+            await walletRandom.methods.storeContentInRPCServer(certificateId, certificateContent, `${process.env.rpcURL}`);
             expect(true).toBeTruthy();
             done()
         });
@@ -34,7 +76,7 @@ describe('Certificate', () => {
 
             try {
 
-                await wallet.methods.storeContentInRPCServer(certificateId, certificateClone, `${process.env.rpcURL}`);
+                await walletRandom.methods.storeContentInRPCServer(certificateId, certificateClone, `${process.env.rpcURL}`);
             } catch (e) {
                 isInError = true;
             }
@@ -45,35 +87,28 @@ describe('Certificate', () => {
         });
 
         test('should be able to store content if tokenId does not exist in BC', async (done) => {
-            await wallet.methods.storeContentInRPCServer(-1, {}, `${process.env.rpcURL}`);
+            await walletOwner.methods.storeContentInRPCServer(-1, {}, `${process.env.rpcURL}`);
             expect(true).toBeTruthy();
             done()
-        })
+        });
     });
-
     describe('read', () => {
 
-
-        beforeEach(async () => {
-            await wallet.methods.storeContentInRPCServer(certificateId, certificateContent, process.env.rpcURL);
-        });
-
         test('owner should be able get content', async (done) => {
-        await wallet.methods.storeContentInRPCServer(certificateId, certificateContent,  process.env.rpcURL);
-        const result = await wallet.methods.getCertificate(certificateId, undefined,
+            const result = await walletOwner.methods.getCertificate(
+                certificateId,
+                undefined,
             {content: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
 
 
         expect(result.content.data).toEqual(certificateContent);
         done()
         });
-
         test('not owner should NOT be able get content', async (done) => {
-            const notOwnerWallet = arianee.fromRandomMnemonic();
 
 
-            const result = await notOwnerWallet.methods.getCertificate(certificateId, undefined,
-                {content: true, issuer: {rpcURI:process.env.rpcURL}});
+            const result = await walletRandom.methods.getCertificate(certificateId, undefined,
+                {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 
             expect(result.content).toBeUndefined();
@@ -82,11 +117,10 @@ describe('Certificate', () => {
 
         test('valid arianeeJWT should be able to get content', async (done) => {
 
-            const arianeeJWT = wallet.methods.createCertificateArianeeAccessToken(certificateId);
-            const notOwnerWallet = arianee.fromRandomMnemonic();
+            const arianeeJWT = walletOwner.methods.createCertificateArianeeAccessToken(certificateId);
 
 
-            const result = await notOwnerWallet.methods.getCertificateFromArianeeAccessToken(arianeeJWT,
+            const result = await walletRandom.methods.getCertificateFromArianeeAccessToken(arianeeJWT,
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 
@@ -97,14 +131,24 @@ describe('Certificate', () => {
         test('unvalid arianeeJWT should NOT be able to get content', async (done) => {
 
             const unvalidArianeeJWT = arianee.fromRandomMnemonic().methods.createCertificateArianeeAccessToken(certificateId);
-            const notOwnerWallet = arianee.fromRandomMnemonic();
 
-
-            const result = await notOwnerWallet.methods.getCertificateFromArianeeAccessToken(unvalidArianeeJWT,
+            const result = await walletRandom.methods.getCertificateFromArianeeAccessToken(unvalidArianeeJWT,
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 
             expect(result.content).toBeUndefined();
+
+            done()
+        });
+
+        test('issuer should be able to get content even if not owner', async (done) => {
+
+            const result = await walletIssuer.methods.getCertificate(certificateId,
+                undefined,
+                {content: true, issuer: {rpcURI: process.env.rpcURL}});
+
+            expect(result.content).toBeDefined();
+            expect(result.content.data).toEqual(certificateContent);
 
             done()
         })
