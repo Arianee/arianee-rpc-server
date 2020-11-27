@@ -62,6 +62,17 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
       return successCallBack();
     }
 
+    const issuer = await tempWallet
+        .contracts
+        .smartAssetContract
+        .methods
+        .issuerOf(certificateId)
+        .call();
+
+    if (issuer === publicAddressOfSender) {
+      return successCallBack();
+    }
+
     // Is the user provide a token acces
     for (let tokenType = 0; tokenType < 4; tokenType++) {
       const data = await tempWallet.contracts.smartAssetContract.methods
