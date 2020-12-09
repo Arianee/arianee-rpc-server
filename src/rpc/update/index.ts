@@ -21,7 +21,7 @@ const updateRPCFactory = (configuration: { fetchItem, createItem, network, creat
       ]);
 
     const arianee = await new Arianee().init(network);
-    const tempWallet = arianee.fromRandomKey();
+    const tempWallet = arianee.readOnlyWallet();
 
     try{
       const update = await tempWallet.contracts.updateSmartAssetContract.methods.getUpdate(certificateId).call();

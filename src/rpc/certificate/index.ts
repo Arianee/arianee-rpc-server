@@ -29,7 +29,7 @@ const certificateRPCFactory = (configuration:ReadConfiguration) => {
         ]);
 
     const arianee = await new Arianee().init(network);
-    const tempWallet = arianee.fromRandomKey();
+    const tempWallet = arianee.readOnlyWallet();
 
     let tokenImprint,res;
     const isTokenIdExist: boolean = await tempWallet
