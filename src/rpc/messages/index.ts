@@ -21,7 +21,7 @@ const messageRPCFactory = (configuration: { fetchItem, createItem, network, crea
         const {messageId, json} = data;
 
         const arianee = await new Arianee().init(network);
-        const tempWallet = arianee.fromRandomKey();
+        const tempWallet = arianee.readOnlyWallet();
 
         const message = await tempWallet.contracts.messageContract.methods.messages(messageId)
             .call()

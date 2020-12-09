@@ -59,7 +59,7 @@ const eventRPCFactory = (configuration: { fetchItem, createItem, network, create
         };
 
         const arianee = await new Arianee().init(network);
-        const tempWallet = arianee.fromRandomKey();
+        const tempWallet = arianee.readOnlyWallet();
 
         const {certificateId, authentification, eventId} = data;
         const {message, signature, bearer} = authentification;

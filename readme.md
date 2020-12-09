@@ -52,7 +52,10 @@ app.post("/rpc",rpcServer);
 
 ```
 
-
+### TEST
+ 1/ Launch ```npm run start:express```
+ 
+ 2/ launch ```npm run test:watch```
 ### DEBUG
 
 process.env.DEBUG = true
