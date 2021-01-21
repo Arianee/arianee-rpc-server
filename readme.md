@@ -18,28 +18,62 @@ const arianeeRPC=new ArianeeRPCCustom(NETWORK.mainnet);
 
 ### Certificates:
 
-A certificate can be ```create``` or ```read`create```. 
+A certificate can be ```read``` or ```create```. 
 You need to define this 2 methods.
 
 ```javascript
 
 const fetchCertificateContent=(certificateId)=>Promise.resolve('hey I am the content');
-const createCertificate=(certificateid, content)=>Promise.resolve('hey I have created the content');
+const createCertificate=(certificateId, content)=>Promise.resolve('hey I have created the content');
+const createCertificateWithoutBlockchainValidation=(certificateId, content)=>Promise.resolve('hey I have created the content');
 
-arianeeRPC.setFetchCertificateContent(fetchCertificateContent,createCertificate);
+arianeeRPC.setCertificateContentMethods(fetchCertificateContent, createCertificate, createCertificateWithoutBlockchainValidation);
 ```
 
 ### Events
-An event can be ```create``` or ```read`create```. 
+An event can be ```read``` or ```create```. 
 You need to define this 2 methods.
 
 ```javascript
 
-const fetchCertificateContent=(certificateId)=>Promise.resolve('hey I am the content');
-const createCertificate=(certificateid, content)=>Promise.resolve('hey I have created the content');
+const fetchEventContent=(eventId)=>Promise.resolve('hey I am the content');
+const createEvent=(eventId, content)=>Promise.resolve('hey I have created the content');
+const createEventWithoutBlockchainValidation=(eventId, content)=>Promise.resolve('hey I have created the content');
 
-arianeeRPC.setFetchEventContent(fetchCertificateContent,createCertificate);
+arianeeRPC.setEventContentMethods(fetchEvent, createEvent, createEventWithoutBlockchainValidation);
 ```
+
+
+### Message
+An event can be ```read``` or ```create```. 
+You need to define this 2 methods.
+
+```javascript
+
+const fetchMessageContent=(messageId)=>Promise.resolve('hey I am the content');
+const createMessage=(messageId, content)=>Promise.resolve('hey I have created the content');
+const createMessageWithoutBlockchainValidation=(messageId, content)=>Promise.resolve('hey I have created the content');
+
+arianeeRPC.setMessageContentMethods(fetchMessage,createMessage, createMessageWithoutBlockchainValidation);
+```
+
+
+### Certificate Update
+An event can be ```read``` or ```create```. 
+You need to define this 2 methods.
+
+```javascript
+
+const fetchUpdateContent=(certificateId)=>Promise.resolve('hey I am the content');
+const createUpdate=(certificateId, content)=>Promise.resolve('hey I have created the content');
+const createUpdateWithoutBlockchainValidation=(certificateId, content)=>Promise.resolve('hey I have created the content');
+
+arianeeRPC.setUpdateContentMethods(fetchUpdate,createUpdate, createUpdateWithoutBlockchainValidation);
+```
+
+
+
+
 ### Final step: build
 Then if you need to build. It returns a function that can be easily used in an express server
 
