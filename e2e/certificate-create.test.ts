@@ -37,8 +37,6 @@ describe('Certificate', () => {
                 walletOwner.methods.requestPoa(),
             ]);
 
-            walletIssuer.methods.buyCredits('certificate', 2);
-
             console.info("preparing wallets: creating certificate");
 
             certificateId = result.certificateId;

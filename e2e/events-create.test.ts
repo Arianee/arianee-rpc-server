@@ -6,17 +6,63 @@ import {cloneDeep} from 'lodash';
 import {eventContent} from "./mocks/eventContent";
 
 describe('Event', () => {
-    const arianeeEventId = 4254908;
-    const certificateId = 7371300;
+
+    let certificateId;
+    let passphrase;
     let arianee: ArianeeWalletBuilder;
-    let wallet: ArianeeWallet;
+    let walletOwner:  ArianeeWallet;
+    let walletIssuer:ArianeeWallet;
+    let walletRandom:ArianeeWallet;
+    let arianeeEventId;
 
     beforeAll(async () => {
-        arianee = await new Arianee().init(NETWORK.testnet);
-        wallet = arianee.fromPrivateKey(process.env.privateKey)
+        try {
+
+            arianee = await new Arianee()
+                .setStore({
+                    // be sure to not get from cache
+                    hasItem: () => Promise.resolve(false),
+                    getStoreItem:(key)=>Promise.resolve(undefined),
+                    setStoreItem:(key,value)=>Promise.resolve(undefined)
+                })
+                .init(NETWORK.testnet);
+
+            walletIssuer = arianee.fromPrivateKey(process.env.privateKey);
+            walletOwner =  arianee.fromRandomMnemonic();
+            walletRandom =  arianee.fromRandomMnemonic();
+            console.info("preparing wallets:FAUCET");
+            const [result] = await Promise.all([
+                walletIssuer.methods.createCertificate({
+                    content: certificateContent
+                }),
+                walletIssuer.methods.requestPoa(),
+                walletIssuer.methods.requestAria(),
+                walletOwner.methods.requestPoa(),
+                
+            ]);
+
+            console.info("preparing wallets: creating certificate");
+
+            certificateId = result.certificateId;
+            passphrase = result.passphrase;
+
+            console.info(`preparing wallets: DONE ${certificateId} ${passphrase}`);
+
+            console.log('preparing wallets: requesting ownership');
+            const [arianeeEvent] = await Promise.all([
+                walletIssuer.methods.createAndStoreArianeeEvent({certificateId, content:eventContent}, process.env.rpcURL),
+                walletOwner.methods.requestCertificateOwnership(certificateId, passphrase),
+                walletRandom.methods.storeContentInRPCServer(certificateId, certificateContent, process.env.rpcURL)
+            ])
+
+            arianeeEventId = arianeeEvent.arianeeEventId 
+        } catch (e) {
+            console.error(e);
+        }
     });
+
     test('should be able create content if content is equal to imprint', async (done) => {
-        await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
+        await walletIssuer.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
         expect(true).toBeTruthy();
         done()
     });
@@ -28,7 +74,7 @@ describe('Event', () => {
         eventContentClone.title = 'anotherTitle';
 
         try {
-            await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContentClone, `${process.env.rpcURL}`);
+            await walletIssuer.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContentClone, `${process.env.rpcURL}`);
 
         } catch (e) {
             isInError = true;
@@ -44,17 +90,17 @@ describe('Event', () => {
         const eventContentClone = cloneDeep(eventContent);
         eventContentClone.title = 'anotherTitle';
 
-        await wallet.methods.storeArianeeEvent(-1, -3, eventContentClone, `${process.env.rpcURL}`);
+        await walletIssuer.methods.storeArianeeEvent(-1, -3, eventContentClone, `${process.env.rpcURL}`);
 
         expect(true).toBeTruthy();
         done()
 
 
     });
-    test('should be able get content', async (done) => {
-        await wallet.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
+    test('should be able get content (owner wallet)', async (done) => {
+        await walletOwner.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
 
-        const result = await wallet.methods.getCertificate(certificateId, undefined,
+        const result = await walletOwner.methods.getCertificate(certificateId, undefined,
             {arianeeEvents: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
 
         const arianeeEvent = result.events.arianeeEvents.find(d => d.arianeeEventId.toString() === arianeeEventId.toString());
@@ -63,4 +109,32 @@ describe('Event', () => {
         done()
 
     })
+    test('should be able get content (issuer wallet)', async (done) => {
+        await walletIssuer.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
+
+        const result = await walletIssuer.methods.getCertificate(certificateId, undefined,
+            {arianeeEvents: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
+
+        const arianeeEvent = result.events.arianeeEvents.find(d => d.arianeeEventId.toString() === arianeeEventId.toString());
+
+        expect(arianeeEvent.content.data).toEqual(eventContent);
+        done()
+
+    })
+
+
+    test('should NOT be able get content (random wallet)', async (done) => {
+        await walletRandom.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContent, `${process.env.rpcURL}`);
+
+        const result = await walletRandom.methods.getCertificate(certificateId, undefined,
+            {arianeeEvents: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
+
+        const arianeeEvent = result.events.arianeeEvents.find(d => d.arianeeEventId.toString() === arianeeEventId.toString());
+
+        expect(arianeeEvent.content.data).toBeUndefined();
+        done()
+
+    })    
+
+
 });
