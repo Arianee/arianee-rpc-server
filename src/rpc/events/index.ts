@@ -113,6 +113,18 @@ const eventRPCFactory = (configuration: { fetchItem, createItem, network, create
                 return successCallBack();
             }
 
+            // Is user the issuer of this certificate
+            const issuer = await tempWallet
+            .contracts
+            .smartAssetContract
+            .methods
+            .issuerOf(certificateId)
+            .call();
+
+            if (issuer === publicAddressOfSender) {
+                return successCallBack();
+            }            
+
             // Is the user provide a token access
             for (let tokenType = 0; tokenType < 4; tokenType++) {
                 const data = await tempWallet.contracts.smartAssetContract.methods
