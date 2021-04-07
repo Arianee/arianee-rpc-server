@@ -11,7 +11,7 @@ import {readCertificate} from "../../helpers/readCertificate";
 
 const certificateRPCFactory = (configuration:ReadConfiguration) => {
 
-  const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
+  const {fetchItem, createItem, arianeeWallet, createWithoutValidationOnBC} = configuration;
 
 
   /**
@@ -28,8 +28,7 @@ const certificateRPCFactory = (configuration:ReadConfiguration) => {
           () => createWithoutValidationOnBC(certificateId, json)
         ]);
 
-    const arianee = await new Arianee().init(network);
-    const tempWallet = arianee.readOnlyWallet();
+    const tempWallet = await arianeeWallet;
 
     let tokenImprint,res;
     const isTokenIdExist: boolean = await tempWallet

@@ -1,14 +1,14 @@
 import {RPCNAME} from "../rpc-name";
-import {Arianee} from "@arianee/arianeejs";
 import axios from 'axios';
 import {MessagePayload, MessagePayloadCreate} from "../models/messages";
 import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
+import {ReadConfiguration} from "../models/readConfiguration";
 
 
-const messageRPCFactory = (configuration: { fetchItem, createItem, network, createWithoutValidationOnBC? }) => {
+const messageRPCFactory = (configuration: ReadConfiguration) => {
 
-    const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
+    const {fetchItem, createItem, arianeeWallet, createWithoutValidationOnBC} = configuration;
 
     const create = async (data: MessagePayloadCreate, callback) => {
 
@@ -20,8 +20,7 @@ const messageRPCFactory = (configuration: { fetchItem, createItem, network, crea
 
         const {messageId, json} = data;
 
-        const arianee = await new Arianee().init(network);
-        const tempWallet = arianee.readOnlyWallet();
+        const tempWallet =await arianeeWallet;
 
         const message = await tempWallet.contracts.messageContract.methods.messages(messageId)
             .call()
@@ -58,8 +57,7 @@ const messageRPCFactory = (configuration: { fetchItem, createItem, network, crea
             }
         };
 
-        const arianee = await new Arianee().init(network);
-        const tempWallet = arianee.fromRandomKey();
+        const tempWallet =await arianeeWallet;
 
         const { authentification, messageId } = data;
         const { message, signature } = authentification;

@@ -5,7 +5,7 @@ console.log("port",port)
 var bodyParser = require("body-parser");
 import {SessionDBRPC} from "./sessionDB";
 
-const arianeeRpcServer = SessionDBRPC();
+const $arianeeRpcServer = SessionDBRPC();
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -13,7 +13,10 @@ app.use(bodyParser.json());
 app.get('/', (req, res) => {
     res.send("World");
 });
-app.post("/rpc", (req, res, next) => arianeeRpcServer(req, res, next));
+app.post("/rpc", async (req, res, next) => {
+    const arianeeRpcServer = await $arianeeRpcServer;
+    return arianeeRpcServer(req, res, next);
+});
 
 app.listen(port, () => {
     return console.log(`Example app listening on port ${port}!`);

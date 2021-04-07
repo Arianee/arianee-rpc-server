@@ -5,11 +5,12 @@ import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
 import {RPCNAME} from "../rpc-name";
 import {readCertificate} from "../../helpers/readCertificate";
+import {ReadConfiguration} from "../models/readConfiguration";
 
 
-const updateRPCFactory = (configuration: { fetchItem, createItem, network, createWithoutValidationOnBC? }) => {
+const updateRPCFactory = (configuration:ReadConfiguration) => {
 
-  const {createItem, network, createWithoutValidationOnBC} = configuration;
+  const {createItem, arianeeWallet, createWithoutValidationOnBC} = configuration;
 
   const create = async (data:CertificatePayloadCreate, callback:SyncFunc) => {
     const { certificateId, json } = data;
@@ -20,8 +21,7 @@ const updateRPCFactory = (configuration: { fetchItem, createItem, network, creat
         () => createWithoutValidationOnBC(certificateId, json)
       ]);
 
-    const arianee = await new Arianee().init(network);
-    const tempWallet = arianee.readOnlyWallet();
+    const tempWallet = await arianeeWallet
 
     try{
       const update = await tempWallet.contracts.updateSmartAssetContract.methods.getUpdate(certificateId).call();

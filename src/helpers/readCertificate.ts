@@ -1,12 +1,11 @@
 import {CertificatePayload} from "../rpc/models/certificates";
 import {SyncFunc} from "../rpc/models/func";
 import {ErrorEnum, getError} from "../rpc/errors/error";
-import {Arianee} from "@arianee/arianeejs/dist/src";
 import {ReadConfiguration} from "../rpc/models/readConfiguration";
 
 
 export const readCertificate = async (data: CertificatePayload, callback: SyncFunc, configuration: ReadConfiguration) => {
-  const {fetchItem, network} = configuration;
+  const {fetchItem, arianeeWallet} = configuration;
 
   const successCallBack = async () => {
     try {
@@ -17,8 +16,7 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
     }
   };
 
-  const arianee = await new Arianee().init(network);
-  const tempWallet = arianee.fromRandomKey();
+  const tempWallet = await arianeeWallet
 
   const {certificateId, authentification} = data;
   const {message, signature, bearer} = authentification;
