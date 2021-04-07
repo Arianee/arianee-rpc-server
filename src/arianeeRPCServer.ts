@@ -2,7 +2,8 @@ import * as jayson from "jayson";
 import { RPCMethods } from "./rpc";
 import {AsyncFunc} from "./rpc/models/func";
 import {isDebug} from "./rpc/libs/isDebugMode";
-import {updateRPCFactory} from "./rpc/update";
+import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
+import {Arianee, NETWORK} from "@arianee/arianeejs";
 
 if(isDebug) {
   console.warn('!!!!!!!!!!!!!!!!!!!!!!')
@@ -12,11 +13,19 @@ export class ArianeeRPCCustom {
   private certificateRPC;
   private eventRPC;
   private messageRPC;
-  private network;
   private updateRPC;
+  private arianeeWallet: Promise<ArianeeWallet>;
 
-  constructor(network:string){
-    this.network = network;
+  constructor(network: NETWORK);
+  constructor(network: string);
+  constructor(network: ArianeeWallet);
+  constructor(walletOrNetwork: string | any) {
+    if (typeof walletOrNetwork === 'string') {
+      this.arianeeWallet = new Arianee().init()
+          .then(arianee => arianee.readOnlyWallet())
+    } else {
+      this.arianeeWallet = walletOrNetwork as any;
+    }
   }
 
   /**
@@ -30,7 +39,7 @@ export class ArianeeRPCCustom {
       fetchItem,
       createItem,
       createWithoutValidationOnBC,
-      network: this.network
+      arianeeWallet: this.arianeeWallet
     });
     return this;
   }
@@ -42,7 +51,8 @@ export class ArianeeRPCCustom {
    */
   public setEventContentMethods(fetchItem: AsyncFunc, createItem: AsyncFunc, createWithoutValidationOnBC?: AsyncFunc) {
     this.eventRPC = RPCMethods.eventRPCFactory({
-      fetchItem, createItem, createWithoutValidationOnBC, network: this.network
+      fetchItem, createItem, createWithoutValidationOnBC,
+      arianeeWallet: this.arianeeWallet
     });
     return this;
   }
@@ -55,7 +65,9 @@ export class ArianeeRPCCustom {
   public setMessageContentMethods(fetchItem: AsyncFunc, createItem: AsyncFunc, createWithoutValidationOnBC?: AsyncFunc) {
     this.messageRPC = RPCMethods.messageRPCFactory(
         {
-          fetchItem, createItem, createWithoutValidationOnBC, network: this.network
+          fetchItem, createItem, createWithoutValidationOnBC,
+          arianeeWallet: this.arianeeWallet
+
         }
     );
     return this;
@@ -64,7 +76,8 @@ export class ArianeeRPCCustom {
   public setUpdateContentMethods(fetchItem: AsyncFunc, createItem: AsyncFunc, createWithoutValidationOnBC?: AsyncFunc) {
     this.updateRPC = RPCMethods.updateRPCFactory(
       {
-        fetchItem, createItem, createWithoutValidationOnBC, network: this.network
+        fetchItem, createItem, createWithoutValidationOnBC,
+        arianeeWallet:this.arianeeWallet
       }
     )
     return this;

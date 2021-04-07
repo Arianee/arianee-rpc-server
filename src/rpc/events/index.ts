@@ -4,11 +4,12 @@ import axios from 'axios';
 import {EventPayload, EventPayloadCreate} from "../models/events";
 import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
+import {ReadConfiguration} from "../models/readConfiguration";
 
 
-const eventRPCFactory = (configuration: { fetchItem, createItem, network, createWithoutValidationOnBC? }) => {
+const eventRPCFactory = (configuration:ReadConfiguration) => {
 
-    const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
+    const {fetchItem, createItem, arianeeWallet, createWithoutValidationOnBC} = configuration;
 
     const create = async (data: EventPayloadCreate, callback) => {
 
@@ -19,8 +20,8 @@ const eventRPCFactory = (configuration: { fetchItem, createItem, network, create
 
         const { eventId, json} = data;
 
-        const arianee = await new Arianee().init(network);
-        const tempWallet = arianee.fromRandomKey();
+        const tempWallet =await arianeeWallet;
+
         const event = await tempWallet.contracts.eventContract.methods.getEvent(eventId).call()
             .catch(() => undefined);
 
@@ -58,8 +59,7 @@ const eventRPCFactory = (configuration: { fetchItem, createItem, network, create
             }
         };
 
-        const arianee = await new Arianee().init(network);
-        const tempWallet = arianee.readOnlyWallet();
+        const tempWallet =await arianeeWallet;
 
         const {certificateId, authentification, eventId} = data;
         const {message, signature, bearer} = authentification;
@@ -123,7 +123,7 @@ const eventRPCFactory = (configuration: { fetchItem, createItem, network, create
 
             if (issuer === publicAddressOfSender) {
                 return successCallBack();
-            }            
+            }
 
             // Is the user provide a token access
             for (let tokenType = 0; tokenType < 4; tokenType++) {
