@@ -23,12 +23,12 @@
     "url": "https://github.com/Arianee/arianee-rpc-server"
   },
   "dependencies": {
-    "@arianee/arianeejs": "^1.39.0",
+    "@arianee/arianeejs": "^1.65.0",
     "axios": "^0.21.1",
     "express": "^4.17.1",
     "isobjectmatchingmodel": "^1.0.1",
     "jayson": "^3.0.2",
-    "jest-environment-node": "^24.9.0",
+    "jest-environment-node": "^26.3.0",
     "jrpc": "^3.1.2"
   },
   "devDependencies": {

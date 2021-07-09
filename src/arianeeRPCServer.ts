@@ -21,7 +21,7 @@ export class ArianeeRPCCustom {
   constructor(network: ArianeeWallet);
   constructor(walletOrNetwork: string | any) {
     if (typeof walletOrNetwork === 'string') {
-      this.arianeeWallet = new Arianee().init()
+      this.arianeeWallet = new Arianee().init(walletOrNetwork as NETWORK)
           .then(arianee => arianee.readOnlyWallet())
     } else {
       this.arianeeWallet = walletOrNetwork as any;

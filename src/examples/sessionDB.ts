@@ -8,7 +8,7 @@ const updateDB={};
 
 
 export const SessionDBRPC = async (network=NETWORK.testnet)=> {
-    const arianee = await new Arianee().init();
+    const arianee = await new Arianee().init(network);
     const wallet = arianee.readOnlyWallet();
 
     return new ArianeeRPCCustom(wallet)
