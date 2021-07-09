@@ -5,6 +5,7 @@
     "noImplicitAny": false,
     "sourceMap": true,
     "declaration": true,
+    "skipLibCheck": true,
     "target": "es5",
     "esModuleInterop": true,
     "emitDecoratorMetadata": true,

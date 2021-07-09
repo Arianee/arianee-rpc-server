@@ -1,0 +1,13 @@
+version: "3"
+services:
+  blockchain:
+    container_name: blockchain
+    image: arianeetech/arianee-rpc-server-blockchain
+    ports:
+      - 8545:8545
+  faucet:
+    container_name: faucet
+    build:
+      context: "https://${FAUCETDOCKERTOKEN}@github.com/Arianee/arianee-faucet.git#feat/docker"
+    ports:
+      - 3001:3000

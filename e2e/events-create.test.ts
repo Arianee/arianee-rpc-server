@@ -25,21 +25,18 @@ describe('Event', () => {
                     getStoreItem:(key)=>Promise.resolve(undefined),
                     setStoreItem:(key,value)=>Promise.resolve(undefined)
                 })
-                .init(NETWORK.testnet);
+                .init(NETWORK.arianeeTestnet);
 
-            walletIssuer = arianee.fromPrivateKey(process.env.privateKey);
+            walletIssuer = arianee.fromMnemonic("magic direct wrist cook share cliff remember sport endorse march equip earth");
             walletOwner =  arianee.fromRandomMnemonic();
             walletRandom =  arianee.fromRandomMnemonic();
             console.info("preparing wallets:FAUCET");
-            const [result] = await Promise.all([
-                walletIssuer.methods.createCertificate({
-                    content: certificateContent
-                }),
-                walletIssuer.methods.requestPoa(),
-                walletIssuer.methods.requestAria(),
-                walletOwner.methods.requestPoa(),
-                
-            ]);
+            const result = await walletIssuer.methods.createCertificate({
+                content: certificateContent
+            });
+            await walletIssuer.methods.requestPoa();
+            await walletIssuer.methods.requestAria();
+            await walletOwner.methods.requestPoa();
 
             console.info("preparing wallets: creating certificate");
 
@@ -55,7 +52,7 @@ describe('Event', () => {
                 walletRandom.methods.storeContentInRPCServer(certificateId, certificateContent, process.env.rpcURL)
             ])
 
-            arianeeEventId = arianeeEvent.arianeeEventId 
+            arianeeEventId = arianeeEvent.arianeeEventId
         } catch (e) {
             console.error(e);
         }
@@ -75,7 +72,6 @@ describe('Event', () => {
 
         try {
             await walletIssuer.methods.storeArianeeEvent(certificateId, arianeeEventId, eventContentClone, `${process.env.rpcURL}`);
-
         } catch (e) {
             isInError = true;
         }
@@ -134,7 +130,7 @@ describe('Event', () => {
         expect(arianeeEvent.content.data).toBeUndefined();
         done()
 
-    })    
+    })
 
 
 });

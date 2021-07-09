@@ -22,9 +22,9 @@ describe('Certificate', () => {
                     getStoreItem:(key)=>Promise.resolve(undefined),
                     setStoreItem:(key,value)=>Promise.resolve(undefined)
                 })
-                .init(NETWORK.testnet);
+                .init(NETWORK.arianeeTestnet);
 
-            walletIssuer = arianee.fromPrivateKey(process.env.privateKey);
+            walletIssuer = arianee.fromMnemonic("magic direct wrist cook share cliff remember sport endorse march equip earth");
             walletOwner =  arianee.fromRandomMnemonic();
             walletRandom =  arianee.fromRandomMnemonic();
             console.info("preparing wallets:FAUCET");
@@ -84,22 +84,23 @@ describe('Certificate', () => {
 
         });
 
-        test('should be able to store content if tokenId does not exist in BC', async (done) => {
+        /*test('should be able to store content if tokenId does not exist in BC', async (done) => {
             await walletOwner.methods.storeContentInRPCServer(-1, {}, `${process.env.rpcURL}`);
             expect(true).toBeTruthy();
             done()
-        });
+        });*/
     });
     describe('read', () => {
 
         test('owner should be able get content', async (done) => {
+
             const result = await walletOwner.methods.getCertificate(
                 certificateId,
                 undefined,
             {content: true, issuer: {rpcURI: 'http://localhost:3000/rpc'}});
 
 
-        expect(result.content.data).toEqual(certificateContent);
+            expect(result.content.raw).toEqual(certificateContent);
         done()
         });
         test('not owner should NOT be able get content', async (done) => {
@@ -109,32 +110,32 @@ describe('Certificate', () => {
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 
-            expect(result.content).toBeUndefined();
+            expect(result.content.raw).toBeUndefined();
             done()
         });
 
         test('valid arianeeJWT should be able to get content', async (done) => {
 
-            const arianeeJWT = walletOwner.methods.createCertificateArianeeAccessToken(certificateId);
+            const arianeeJWT = await walletOwner.methods.createCertificateArianeeAccessToken(certificateId);
 
 
             const result = await walletRandom.methods.getCertificateFromArianeeAccessToken(arianeeJWT,
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 
-            expect(result.content.data).toEqual(certificateContent);
+            expect(result.content.raw).toEqual(certificateContent);
             done()
         });
 
         test('unvalid arianeeJWT should NOT be able to get content', async (done) => {
 
-            const unvalidArianeeJWT = arianee.fromRandomMnemonic().methods.createCertificateArianeeAccessToken(certificateId);
+            const unvalidArianeeJWT = await arianee.fromRandomMnemonic().methods.createCertificateArianeeAccessToken(certificateId);
 
             const result = await walletRandom.methods.getCertificateFromArianeeAccessToken(unvalidArianeeJWT,
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
 
-            expect(result.content).toBeUndefined();
+            expect(result.content.raw).toBeUndefined();
 
             done()
         });
@@ -146,7 +147,7 @@ describe('Certificate', () => {
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
             expect(result.content).toBeDefined();
-            expect(result.content.data).toEqual(certificateContent);
+            expect(result.content.raw).toEqual(certificateContent);
 
             done()
         })
