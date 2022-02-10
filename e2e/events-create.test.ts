@@ -31,12 +31,13 @@ describe('Event', () => {
             walletOwner =  arianee.fromRandomMnemonic();
             walletRandom =  arianee.fromRandomMnemonic();
             console.info("preparing wallets:FAUCET");
-            const result = await walletIssuer.methods.createCertificate({
-                content: certificateContent
-            });
             await walletIssuer.methods.requestPoa();
             await walletIssuer.methods.requestAria();
             await walletOwner.methods.requestPoa();
+            
+            const result = await walletIssuer.methods.createCertificate({
+                content: certificateContent
+            });
 
             console.info("preparing wallets: creating certificate");
 
