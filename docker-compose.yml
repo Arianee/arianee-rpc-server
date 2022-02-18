@@ -8,6 +8,6 @@ services:
   faucet:
     container_name: faucet
     build:
-      context: "https://${FAUCETDOCKERTOKEN}@github.com/Arianee/arianee-faucet.git#feat/docker"
+      context: "https://${FAUCETDOCKERTOKEN}@github.com/Arianee/arianee-faucet.git#main"
     ports:
       - 3001:3000
