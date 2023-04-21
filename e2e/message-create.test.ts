@@ -4,22 +4,31 @@ import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
 import {certificateContent} from "./mocks/certificateContent";
 import {cloneDeep} from 'lodash';
 import {messageContent} from "./mocks/messageContent";
+import axios from "axios";
+import {eventContent} from "./mocks/eventContent";
 
 describe('Message', () => {
     let certificateId
     let messageId;
     let arianee: ArianeeWalletBuilder;
-    let wallet: ArianeeWallet;
+    let walletIssuer: ArianeeWallet;
+    let walletOwner: ArianeeWallet;
+    let walletRandom: ArianeeWallet;
     beforeAll(async () => {
         arianee = await new Arianee().init(NETWORK.arianeeTestnet);
-        wallet = arianee.fromMnemonic("magic direct wrist cook share cliff remember sport endorse march equip earth")
-        const certificate = await wallet.methods.createCertificate({content:certificateContent});
+        walletIssuer = arianee.fromMnemonic("magic direct wrist cook share cliff remember sport endorse march equip earth")
+        walletOwner =  arianee.fromMnemonic("surge nice nose visa tiger will winner awkward dog admit response gospel");
+        walletRandom = arianee.fromRandomMnemonic();
+        const certificate = await walletIssuer.methods.createCertificate({content:certificateContent});
         certificateId = certificate.certificateId
-        const message = await wallet.methods.createMessage({certificateId,content:messageContent});
+
+        await walletOwner.methods.requestCertificateOwnership(certificateId, certificate.passphrase);
+
+        const message = await walletIssuer.methods.createMessage({certificateId,content:messageContent});
         messageId = message.messageId
     });
     test('should be able create content if content is equal to imprint', async (done) => {
-        await wallet.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
+        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
         expect(true).toBeTruthy();
         done()
     });
@@ -30,7 +39,7 @@ describe('Message', () => {
         const certificateClone = cloneDeep(messageContent);
         certificateClone.title = 'anothertitle';
         try {
-            await wallet.methods.storeMessage(messageId, certificateClone, `${process.env.rpcURL}`);
+            await walletIssuer.methods.storeMessage(messageId, certificateClone, `${process.env.rpcURL}`);
         } catch (e) {
             isInError = true;
         }
@@ -50,10 +59,10 @@ console.log('start3')
         done()
     });*/
 
-    test('should be able get content', async (done) => {
-        await wallet.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
+    test('issuer should be able get content', async (done) => {
+        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
 
-        const result = await wallet.methods.getMessage({
+        const result = await walletIssuer.methods.getMessage({
             messageId,
             query: {content: true},
             url: 'http://localhost:3000/rpc'
@@ -63,4 +72,52 @@ console.log('start3')
         done()
 
     })
+
+    test('owner should be able get content', async (done) => {
+        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
+
+        const result = await walletOwner.methods.getMessage({
+            messageId,
+            query: {content: true},
+            url: 'http://localhost:3000/rpc'
+        });
+
+        expect(result.content.data).toEqual(messageContent);
+        done()
+
+    })
+
+    test('random should not be able get content', async (done) => {
+        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
+
+        const result = await walletRandom.methods.getMessage({
+            messageId,
+            query: {content: true},
+            url: 'http://localhost:3000/rpc'
+        }).catch(e=>undefined);
+
+        expect(result).toBeUndefined();
+        done()
+
+    })
+
+
+    test('random with wallet access token should be able get content', async (done) => {
+        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
+        const arianeeJWT = await walletOwner.methods.createWalletAccessToken();
+
+        const result = await axios.post('http://localhost:3000/rpc', {
+            jsonrpc: '2.0',
+            method: "message.read",
+            params: {
+                messageId,
+                authentification: {bearer : arianeeJWT}
+            },
+            id: '1'
+        })
+
+        expect(result.data.result).toEqual(messageContent);
+        done()
+    })
+
 });

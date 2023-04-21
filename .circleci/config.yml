@@ -6,15 +6,17 @@ orbs:
   # The Node.js orb contains a set of prepackaged CircleCI configuration you can utilize
   # Orbs reduce the amount of configuration required for common tasks.
   # See the orb documentation here: https://circleci.com/developer/orbs/orb/circleci/node
-  node: circleci/node@4.1
+  node: circleci/node@5.1
 
 jobs:
   build-and-test-uat:
     machine:
-      image: ubuntu-1604:202104-01
+      image: ubuntu-2004:2023.04.2
     resource_class: large
     steps:
       - checkout
+      - node/install:
+          node-version: "16.19.0"
       - node/install-packages
       - run:
           name: Declare domain blockchain

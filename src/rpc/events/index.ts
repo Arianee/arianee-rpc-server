@@ -63,13 +63,28 @@ const eventRPCFactory = (configuration:ReadConfiguration) => {
 
         const {certificateId, authentification, eventId} = data;
         const {message, signature, bearer} = authentification;
+        const owner = await tempWallet.contracts.smartAssetContract.methods
+            .ownerOf(certificateId)
+            .call();
+
+        const issuer = await tempWallet
+            .contracts
+            .smartAssetContract
+            .methods
+            .issuerOf(certificateId)
+            .call();
 
         if (bearer) {
-            const isJWTValid = await tempWallet.methods.isCertificateArianeeAccessTokenValid(bearer);
+            const isJWTValid = await tempWallet.methods.isArianeeAccessTokenValid(bearer);
             const {payload} = await tempWallet.methods.decodeArianeeAccessToken(bearer);
-            if (isJWTValid && (payload.subId === certificateId)) {
+
+            if (isJWTValid && payload.subId === certificateId && (payload.iss === owner || payload.iss === issuer)) {
                 return successCallBack();
-            } else {
+            }
+            else if(isJWTValid && payload.sub === 'wallet' && (payload.iss === owner || payload.iss === issuer)){
+                return successCallBack();
+            }
+            else {
                 return callback(getError(ErrorEnum.WRONGJWT));
             }
         }
@@ -105,21 +120,12 @@ const eventRPCFactory = (configuration:ReadConfiguration) => {
             }
 
             // Is user the owner of this certificate
-            const owner = await tempWallet.contracts.smartAssetContract.methods
-                .ownerOf(certificateId)
-                .call();
 
             if (owner === publicAddressOfSender) {
                 return successCallBack();
             }
 
             // Is user the issuer of this certificate
-            const issuer = await tempWallet
-            .contracts
-            .smartAssetContract
-            .methods
-            .issuerOf(certificateId)
-            .call();
 
             if (issuer === publicAddressOfSender) {
                 return successCallBack();
