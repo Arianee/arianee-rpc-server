@@ -12,6 +12,7 @@ describe('Certificate', () => {
     let walletIssuer:ArianeeWallet;
     let walletRandom:ArianeeWallet;
 
+
     beforeAll(async () => {
         try {
 
@@ -25,19 +26,16 @@ describe('Certificate', () => {
                 .init(NETWORK.arianeeTestnet);
 
             walletIssuer = arianee.fromMnemonic("magic direct wrist cook share cliff remember sport endorse march equip earth");
-            walletOwner =  arianee.fromRandomMnemonic();
+            walletOwner =  arianee.fromMnemonic("surge nice nose visa tiger will winner awkward dog admit response gospel");
             walletRandom =  arianee.fromRandomMnemonic();
             console.info("preparing wallets:FAUCET");
-            const [result] = await Promise.all([
-                walletIssuer.methods.createCertificate({
+            const result = await walletIssuer.methods.createCertificate({
                     content: certificateContent
-                }),
-                walletIssuer.methods.requestPoa(),
-                walletIssuer.methods.requestAria(),
-                walletOwner.methods.requestPoa(),
-            ]);
+                });
+
 
             console.info("preparing wallets: creating certificate");
+
 
             certificateId = result.certificateId;
             passphrase = result.passphrase;
@@ -55,7 +53,6 @@ describe('Certificate', () => {
         }
     });
     describe('create content', () => {
-
         test(' should be able create content if content is equal to imprint', async (done) => {
             await walletRandom.methods.storeContentInRPCServer(certificateId, certificateContent, `${process.env.rpcURL}`);
             expect(true).toBeTruthy();
@@ -128,9 +125,7 @@ describe('Certificate', () => {
         });
 
         test('unvalid arianeeJWT should NOT be able to get content', async (done) => {
-
             const unvalidArianeeJWT = await arianee.fromRandomMnemonic().methods.createCertificateArianeeAccessToken(certificateId);
-
             const result = await walletRandom.methods.getCertificateFromArianeeAccessToken(unvalidArianeeJWT,
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
 
@@ -151,6 +146,48 @@ describe('Certificate', () => {
 
             done()
         })
+
+        test('owner should be able to get content with WalletAccessToken from owner', async (done) => {
+            const arianeeJWT = await walletOwner.methods.createWalletAccessToken();
+
+            const result = await walletRandom.methods.getCertificate(
+                certificateId,
+                undefined,
+                {content: true, issuer: {rpcURI: process.env.rpcURL}, advanced:{arianeeProofToken:arianeeJWT}});
+
+            expect(result.content).toBeDefined();
+            expect(result.content.raw).toEqual(certificateContent);
+            done()
+
+        })
+
+        test('owner should be able to get content with WalletAccessToken from issuer', async (done) => {
+            const arianeeJWT = await walletIssuer.methods.createWalletAccessToken();
+
+            const result = await walletRandom.methods.getCertificate(
+                certificateId,
+                undefined,
+                {content: true, issuer: {rpcURI: process.env.rpcURL}, advanced:{arianeeProofToken:arianeeJWT}});
+
+            expect(result.content).toBeDefined();
+            expect(result.content.raw).toEqual(certificateContent);
+            done()
+
+        })
+
+        test('random shouldn\'t be able to get content with WalletAccessToken', async (done) => {
+            const arianeeJWT = await walletRandom.methods.createWalletAccessToken();
+
+            const result = await walletRandom.methods.getCertificate(
+                certificateId,
+                undefined,
+                {content: true, issuer: {rpcURI: process.env.rpcURL}, advanced:{arianeeProofToken:arianeeJWT}});
+
+            expect(result.content.raw).toBeUndefined();
+            done()
+
+        })
+
     })
 
 });

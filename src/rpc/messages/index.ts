@@ -4,6 +4,7 @@ import {MessagePayload, MessagePayloadCreate} from "../models/messages";
 import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
 import {ReadConfiguration} from "../models/readConfiguration";
+import {ContractName} from "@arianee/arianeejs/dist/src/core/wallet/services/contractService/contractsService";
 
 
 const messageRPCFactory = (configuration: ReadConfiguration) => {
@@ -60,7 +61,25 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
         const tempWallet =await arianeeWallet;
 
         const { authentification, messageId } = data;
-        const { message, signature } = authentification;
+        const { message, signature, bearer } = authentification;
+
+        const messageBc = await tempWallet.contracts[ContractName.messageContract].methods
+            .messages(messageId)
+            .call();
+
+        if (bearer) {
+            const isJWTValid = await tempWallet.methods.isArianeeAccessTokenValid(bearer);
+            const {payload} = await tempWallet.methods.decodeArianeeAccessToken(bearer);
+            if (isJWTValid && payload.subId === messageBc.to && payload.iss === messageBc.to) {
+                return successCallBack();
+            }
+            else if(isJWTValid && payload.sub === 'wallet' && payload.iss === messageBc.to){
+                return successCallBack();
+            }
+            else {
+                return callback(getError(ErrorEnum.WRONGJWT));
+            }
+        }
 
         const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
             message,
