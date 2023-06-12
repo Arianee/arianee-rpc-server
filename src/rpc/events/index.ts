@@ -5,6 +5,7 @@ import {EventPayload, EventPayloadCreate} from "../models/events";
 import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
 import {ReadConfiguration} from "../models/readConfiguration";
+import {ArianeeAccessToken} from "@arianee/arianee-access-token";
 
 
 const eventRPCFactory = (configuration:ReadConfiguration) => {
@@ -75,13 +76,19 @@ const eventRPCFactory = (configuration:ReadConfiguration) => {
             .call();
 
         if (bearer) {
-            const isJWTValid = await tempWallet.methods.isArianeeAccessTokenValid(bearer);
-            const {payload} = await tempWallet.methods.decodeArianeeAccessToken(bearer);
 
-            if (isJWTValid && payload.subId === certificateId && (payload.iss === owner || payload.iss === issuer)) {
+            let payload;
+            try{
+                payload = ArianeeAccessToken.decodeJwt(bearer).payload;   // decode test that aat is valid and throw if not
+            }
+            catch (e) {
+                return callback(getError(ErrorEnum.WRONGJWT));
+            }
+
+            if (payload.subId === certificateId && (payload.iss === owner || payload.iss === issuer)) {
                 return successCallBack();
             }
-            else if(isJWTValid && payload.sub === 'wallet' && (payload.iss === owner || payload.iss === issuer)){
+            else if(payload.sub === 'wallet' && (payload.iss === owner || payload.iss === issuer)){
                 return successCallBack();
             }
             else {

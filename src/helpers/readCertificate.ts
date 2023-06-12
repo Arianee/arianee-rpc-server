@@ -2,11 +2,10 @@ import {CertificatePayload} from "../rpc/models/certificates";
 import {SyncFunc} from "../rpc/models/func";
 import {ErrorEnum, getError} from "../rpc/errors/error";
 import {ReadConfiguration} from "../rpc/models/readConfiguration";
-
+import {ArianeeAccessToken} from "@arianee/arianee-access-token";
 
 export const readCertificate = async (data: CertificatePayload, callback: SyncFunc, configuration: ReadConfiguration) => {
   const {fetchItem, arianeeWallet} = configuration;
-
   const successCallBack = async () => {
     try {
       const content = await fetchItem(certificateId);
@@ -21,11 +20,11 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
   const {certificateId, authentification} = data;
   const {message, signature, bearer} = authentification;
 
-
   // Is user the owner of this certificate
   const owner = await tempWallet.contracts.smartAssetContract.methods
       .ownerOf(certificateId)
       .call();
+
   const issuer = await tempWallet
       .contracts
       .smartAssetContract
@@ -34,12 +33,18 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
       .call();
 
   if (bearer) {
-    const isJWTValid = await tempWallet.methods.isArianeeAccessTokenValid(bearer);
-    const {payload} = await tempWallet.methods.decodeArianeeAccessToken(bearer);
-    if (isJWTValid && payload.subId === certificateId && (payload.iss === owner || payload.iss === issuer)) {
+    let payload;
+    try{
+      payload = ArianeeAccessToken.decodeJwt(bearer).payload;   // decode test that aat is valid and throw if not
+    }
+    catch (e) {
+      return callback(getError(ErrorEnum.WRONGJWT));
+    }
+
+    if (payload.subId === +certificateId && (payload.iss === owner || payload.iss === issuer)) {
       return successCallBack();
     }
-    else if(isJWTValid && payload.sub === 'wallet' && (payload.iss === owner || payload.iss === issuer)){
+    else if(payload.sub === 'wallet' && (payload.iss === owner || payload.iss === issuer)){
       return successCallBack();
     }
     else {
