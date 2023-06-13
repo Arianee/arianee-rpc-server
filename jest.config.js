@@ -17,4 +17,7 @@ module.exports = {
         'node'
     ],
     setupFilesAfterEnv: ['./e2e/setup.ts'],
+    moduleNameMapper: {
+        '@adraffy/ens-normalize': require.resolve('@adraffy/ens-normalize')
+    }
 }

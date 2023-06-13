@@ -3,6 +3,10 @@ import {ArianeeWalletBuilder} from "@arianee/arianeejs/dist/src/core/wallet/wall
 import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
 import {certificateContent} from "./mocks/certificateContent";
 import {cloneDeep} from 'lodash';
+import {ArianeeAccessToken} from "@arianee/arianee-access-token";
+import Core from "@arianee/core";
+import ArianeePrivacyGatewayClient
+    from "@arianee/arianee-privacy-gateway-client/src/lib/arianee-privacy-gateway-client";
 
 describe('Certificate', () => {
     let certificateId;
@@ -11,6 +15,8 @@ describe('Certificate', () => {
     let walletOwner:  ArianeeWallet;
     let walletIssuer:ArianeeWallet;
     let walletRandom:ArianeeWallet;
+
+    const ownerMnemonic = "surge nice nose visa tiger will winner awkward dog admit response gospel"
 
 
     beforeAll(async () => {
@@ -26,7 +32,7 @@ describe('Certificate', () => {
                 .init(NETWORK.arianeeTestnet);
 
             walletIssuer = arianee.fromMnemonic("magic direct wrist cook share cliff remember sport endorse march equip earth");
-            walletOwner =  arianee.fromMnemonic("surge nice nose visa tiger will winner awkward dog admit response gospel");
+            walletOwner =  arianee.fromMnemonic(ownerMnemonic);
             walletRandom =  arianee.fromRandomMnemonic();
             console.info("preparing wallets:FAUCET");
             const result = await walletIssuer.methods.createCertificate({
@@ -101,24 +107,18 @@ describe('Certificate', () => {
         done()
         });
         test('not owner should NOT be able get content', async (done) => {
-
-
             const result = await walletRandom.methods.getCertificate(certificateId, undefined,
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
-
 
             expect(result.content.raw).toBeUndefined();
             done()
         });
 
         test('valid arianeeJWT should be able to get content', async (done) => {
-
             const arianeeJWT = await walletOwner.methods.createCertificateArianeeAccessToken(certificateId);
-
 
             const result = await walletRandom.methods.getCertificateFromArianeeAccessToken(arianeeJWT,
                 {content: true, issuer: {rpcURI: process.env.rpcURL}});
-
 
             expect(result.content.raw).toEqual(certificateContent);
             done()
@@ -132,6 +132,32 @@ describe('Certificate', () => {
 
             expect(result.content.raw).toBeUndefined();
 
+            done()
+        });
+
+        test('valid arianeeAccessToken with prefix should be able to get content', async (done) => {
+
+            const core = Core.fromMnemonic(ownerMnemonic);
+            const aat = new ArianeeAccessToken(core)
+            const arianeeJWT = await aat.createWalletAccessToken({}, "the prefix")
+            const apgClient = new ArianeePrivacyGatewayClient(arianeeJWT)
+
+            const result = await apgClient.certificateRead(process.env.rpcURL, {certificateId});
+
+            expect(result).toEqual(certificateContent);
+            done()
+        });
+
+        test('valid arianeeAccessToken without prefix should be able to get content', async (done) => {
+
+            const core = Core.fromMnemonic(ownerMnemonic);
+            const aat = new ArianeeAccessToken(core)
+            const arianeeJWT = await aat.createWalletAccessToken()
+            const apgClient = new ArianeePrivacyGatewayClient(arianeeJWT)
+
+            const result = await apgClient.certificateRead(process.env.rpcURL, {certificateId});
+
+            expect(result).toEqual(certificateContent);
             done()
         });
 
