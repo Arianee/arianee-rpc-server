@@ -5,6 +5,7 @@ import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
 import {ReadConfiguration} from "../models/readConfiguration";
 import {ContractName} from "@arianee/arianeejs/dist/src/core/wallet/services/contractService/contractsService";
+import {ArianeeAccessToken} from "@arianee/arianee-access-token";
 
 
 const messageRPCFactory = (configuration: ReadConfiguration) => {
@@ -68,12 +69,17 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
             .call();
 
         if (bearer) {
-            const isJWTValid = await tempWallet.methods.isArianeeAccessTokenValid(bearer);
-            const {payload} = await tempWallet.methods.decodeArianeeAccessToken(bearer);
-            if (isJWTValid && payload.subId === messageBc.to && payload.iss === messageBc.to) {
+            let payload;
+            try{
+                payload = ArianeeAccessToken.decodeJwt(bearer).payload;   // decode test that aat is valid and throw if not
+            }
+            catch (e) {
+                return callback(getError(ErrorEnum.WRONGJWT));
+            }
+            if (payload.subId === messageBc.to && payload.iss === messageBc.to) {
                 return successCallBack();
             }
-            else if(isJWTValid && payload.sub === 'wallet' && payload.iss === messageBc.to){
+            else if(payload.sub === 'wallet' && payload.iss === messageBc.to){
                 return successCallBack();
             }
             else {
