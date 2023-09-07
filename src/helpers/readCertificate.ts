@@ -3,9 +3,11 @@ import {SyncFunc} from "../rpc/models/func";
 import {ErrorEnum, getError} from "../rpc/errors/error";
 import {ReadConfiguration} from "../rpc/models/readConfiguration";
 import {ArianeeAccessToken} from "@arianee/arianee-access-token";
+import { ArianeeApiClient } from "@arianee/arianee-api-client";
 
 export const readCertificate = async (data: CertificatePayload, callback: SyncFunc, configuration: ReadConfiguration) => {
   const {fetchItem, arianeeWallet} = configuration;
+  const arianeeApiClient = new ArianeeApiClient();
   const successCallBack = async () => {
     try {
       const content = await fetchItem(certificateId);
@@ -20,18 +22,9 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
   const {certificateId, authentification} = data;
   const {message, signature, bearer} = authentification;
 
-  // Is user the owner of this certificate
-  const owner = await tempWallet.contracts.smartAssetContract.methods
-      .ownerOf(certificateId)
-      .call();
-
-  const issuer = await tempWallet
-      .contracts
-      .smartAssetContract
-      .methods
-      .issuerOf(certificateId)
-      .call();
-
+  const {issuer, owner, requestKey, viewKey, proofKey} = await arianeeApiClient.network.getNft(tempWallet.configuration.networkName, certificateId);
+  const keys = [requestKey, viewKey, proofKey];
+  
   if (bearer) {
     let payload;
     try{
@@ -60,7 +53,8 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
 
     const parsedMessage = JSON.parse(message);
 
-    if (parsedMessage.certificateId !== certificateId) {
+
+    if (+parsedMessage.certificateId !== +certificateId) {
       return callback(getError(ErrorEnum.WRONGCERTIFICATEID));
     }
 
@@ -71,28 +65,19 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
     if (isSignatureTooOld) {
       return callback(getError(ErrorEnum.SIGNATURETOOOLD));
     }
-
-
+    
     if (owner === publicAddressOfSender) {
       return successCallBack();
     }
 
-
-
     if (issuer === publicAddressOfSender) {
       return successCallBack();
     }
-
-    // Is the user provide a token acces
-    for (let tokenType = 0; tokenType < 4; tokenType++) {
-      const data = await tempWallet.contracts.smartAssetContract.methods
-        .tokenHashedAccess(certificateId, tokenType)
-        .call();
-
-      if (publicAddressOfSender === data) {
-        return successCallBack();
-      }
+    
+    if (keys.includes(publicAddressOfSender)) {
+      return successCallBack();
     }
   }
+  
   return callback(getError(ErrorEnum.MAINERROR));
 };
