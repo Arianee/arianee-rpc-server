@@ -24,7 +24,7 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
 
   const {issuer, owner, requestKey, viewKey, proofKey} = await arianeeApiClient.network.getNft(tempWallet.configuration.networkName, certificateId);
   const keys = [requestKey, viewKey, proofKey];
-  
+
   if (bearer) {
     let payload;
     try{
@@ -34,10 +34,14 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
       return callback(getError(ErrorEnum.WRONGJWT));
     }
 
-    if (payload.subId === +certificateId && (payload.iss === owner || payload.iss === issuer)) {
+    const payloadIssuer = payload.iss.toLowerCase()
+    const ownerAddress = owner.toLowerCase();
+    const issuerAddress = issuer.toLowerCase();
+
+    if (payload.subId === +certificateId && (payloadIssuer === ownerAddress || payloadIssuer === issuerAddress)) {
       return successCallBack();
     }
-    else if(payload.sub === 'wallet' && (payload.iss === owner || payload.iss === issuer)){
+    else if(payload.sub === 'wallet' && (payloadIssuer === ownerAddress || payloadIssuer === issuerAddress)){
       return successCallBack();
     }
     else {
@@ -65,7 +69,7 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
     if (isSignatureTooOld) {
       return callback(getError(ErrorEnum.SIGNATURETOOOLD));
     }
-    
+
     if (owner === publicAddressOfSender) {
       return successCallBack();
     }
@@ -73,11 +77,11 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
     if (issuer === publicAddressOfSender) {
       return successCallBack();
     }
-    
+
     if (keys.includes(publicAddressOfSender)) {
       return successCallBack();
     }
   }
-  
+
   return callback(getError(ErrorEnum.MAINERROR));
 };
