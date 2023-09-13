@@ -30,7 +30,11 @@ export const readCertificate = async (
     tempWallet.configuration.networkName,
     certificateId
   );
-  const keys = [requestKey, viewKey, proofKey];
+
+  const lowercasedKeys = [requestKey, viewKey, proofKey].map((k) => k.toLowerCase());
+
+  const lowercasedOwner = owner.toLowerCase();
+  const lowercasedIssuer = issuer.toLowerCase();
 
   if (bearer) {
     let payload;
@@ -40,18 +44,16 @@ export const readCertificate = async (
       return callback(getError(ErrorEnum.WRONGJWT));
     }
 
-    const payloadIssuer = payload.iss.toLowerCase();
-    const ownerAddress = owner.toLowerCase();
-    const issuerAddress = issuer.toLowerCase();
+    const lowercasedPayloadIssuer = payload.iss.toLowerCase();
 
     if (
       +payload.subId === +certificateId &&
-      (payloadIssuer === ownerAddress || payloadIssuer === issuerAddress)
+      (lowercasedPayloadIssuer === lowercasedOwner || lowercasedPayloadIssuer === lowercasedIssuer)
     ) {
       return successCallBack();
     } else if (
       payload.sub === 'wallet' &&
-      (payloadIssuer === ownerAddress || payloadIssuer === issuerAddress)
+      (lowercasedPayloadIssuer === lowercasedOwner || lowercasedPayloadIssuer === lowercasedIssuer)
     ) {
       return successCallBack();
     } else {
@@ -60,7 +62,9 @@ export const readCertificate = async (
   }
 
   if (message && signature) {
-    const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(message, signature);
+    const lowercasedPublicKeyOfSigner = (
+      tempWallet.web3.eth.accounts.recover(message, signature) ?? ''
+    ).toLowerCase();
 
     const parsedMessage = JSON.parse(message);
 
@@ -75,15 +79,15 @@ export const readCertificate = async (
       return callback(getError(ErrorEnum.SIGNATURETOOOLD));
     }
 
-    if (owner === publicAddressOfSender) {
+    if (lowercasedOwner === lowercasedPublicKeyOfSigner) {
       return successCallBack();
     }
 
-    if (issuer === publicAddressOfSender) {
+    if (lowercasedIssuer === lowercasedPublicKeyOfSigner) {
       return successCallBack();
     }
 
-    if (keys.includes(publicAddressOfSender)) {
+    if (lowercasedKeys.includes(lowercasedPublicKeyOfSigner)) {
       return successCallBack();
     }
   }

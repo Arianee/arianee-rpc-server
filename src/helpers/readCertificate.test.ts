@@ -13,12 +13,12 @@ jest.mock('@arianee/arianee-api-client', () => {
             owner: 'someOwner',
             requestKey: 'someRequestKey',
             viewKey: 'someViewKey',
-            proofKey: 'someProofKey'
-          })
-        }
-      }
-    })
-  }
+            proofKey: 'someProofKey',
+          }),
+        },
+      };
+    }),
+  };
 });
 jest.mock('@arianee/arianee-access-token');
 
@@ -31,42 +31,40 @@ describe('readCertificate', () => {
       fetchItem: jest.fn(),
       arianeeWallet: Promise.resolve({
         configuration: {
-          networkName: 'someNetwork'
+          networkName: 'someNetwork',
         },
         web3: {
           eth: {
             accounts: {
-              recover: jest.fn()
-            }
-          }
-        }
-      })
+              recover: jest.fn(),
+            },
+          },
+        },
+      }),
     };
 
     (ArianeeAccessToken.decodeJwt as jest.Mock).mockReturnValue({
-      payload: {}
+      payload: {},
     });
   });
-
 
   describe('bearer', () => {
     beforeEach(() => {
       data = {
         certificateId: '123',
         authentification: {
-          bearer: 'someBearer'
-        }
+          bearer: 'someBearer',
+        },
       };
-
-    })
+    });
 
     // Scenario 1: payload.iss === owner + payload.subId === +certificateId
     test('should successfully fetch item with valid bearer when payload issuer is owner and subId matches', async () => {
       (ArianeeAccessToken.decodeJwt as jest.Mock).mockReturnValueOnce({
         payload: {
           subId: 123,
-          iss: 'someOwner'
-        }
+          iss: 'someOwner',
+        },
       });
       configuration.fetchItem.mockResolvedValueOnce({ content: 'sample-content' });
 
@@ -81,8 +79,8 @@ describe('readCertificate', () => {
       (ArianeeAccessToken.decodeJwt as jest.Mock).mockReturnValueOnce({
         payload: {
           subId: 123,
-          iss: 'someIssuer'
-        }
+          iss: 'someIssuer',
+        },
       });
       configuration.fetchItem.mockResolvedValueOnce({ content: 'sample-content' });
 
@@ -97,8 +95,8 @@ describe('readCertificate', () => {
       (ArianeeAccessToken.decodeJwt as jest.Mock).mockReturnValueOnce({
         payload: {
           sub: 'wallet',
-          iss: 'someOwner'
-        }
+          iss: 'someOwner',
+        },
       });
       configuration.fetchItem.mockResolvedValueOnce({ content: 'sample-content' });
 
@@ -113,8 +111,8 @@ describe('readCertificate', () => {
       (ArianeeAccessToken.decodeJwt as jest.Mock).mockReturnValueOnce({
         payload: {
           sub: 'wallet',
-          iss: 'someIssuer'
-        }
+          iss: 'someIssuer',
+        },
       });
       configuration.fetchItem.mockResolvedValueOnce({ content: 'sample-content' });
 
@@ -128,8 +126,8 @@ describe('readCertificate', () => {
       (ArianeeAccessToken.decodeJwt as jest.Mock).mockReturnValueOnce({
         payload: {
           subId: 123,
-          iss: 'someRandomEntity'
-        }
+          iss: 'someRandomEntity',
+        },
       });
 
       const callback = jest.fn();
@@ -139,13 +137,12 @@ describe('readCertificate', () => {
       expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.WRONGJWT));
     });
 
-
     test('should return an error with valid bearer when payload issuer is issuer but subId does not match certificateId', async () => {
       (ArianeeAccessToken.decodeJwt as jest.Mock).mockReturnValueOnce({
         payload: {
           subId: 456, // This subId doesn't match the expected certificateId of 123
-          iss: 'someIssuer'
-        }
+          iss: 'someIssuer',
+        },
       });
 
       const callback = jest.fn();
@@ -159,8 +156,8 @@ describe('readCertificate', () => {
       (ArianeeAccessToken.decodeJwt as jest.Mock).mockReturnValueOnce({
         payload: {
           subId: 456, // This subId doesn't match the expected certificateId of 123
-          iss: 'someOwner'
-        }
+          iss: 'someOwner',
+        },
       });
 
       const callback = jest.fn();
@@ -182,10 +179,9 @@ describe('readCertificate', () => {
       // Expect the callback to have been called with the WRONGJWT error
       expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.WRONGJWT));
     });
+  });
 
-  })
-
-  describe("signature", () => {
+  describe('signature', () => {
     let validSignatureData;
     let wallet;
     let callback = jest.fn();
@@ -194,8 +190,8 @@ describe('readCertificate', () => {
         certificateId: '123',
         authentification: {
           message: 'someMessage',
-          signature: 'someSignature'
-        }
+          signature: 'someSignature',
+        },
       };
       configuration.fetchItem.mockResolvedValueOnce({ content: 'sample-content' });
       validSignatureData = {
@@ -204,17 +200,20 @@ describe('readCertificate', () => {
           ...data.authentification,
           message: JSON.stringify({
             certificateId: 123,
-            timestamp: new Date().toISOString() // Current timestamp
+            timestamp: new Date().toISOString(), // Current timestamp
           }),
-          signature: 'someValidSignature'
-        }
+          signature: 'someValidSignature',
+        },
       };
 
-      wallet = await configuration.arianeeWallet
-    })
+      wallet = await configuration.arianeeWallet;
+    });
     test('should return an error when signature is too old', async () => {
       const oldTimestamp = new Date(Date.now() - 301 * 1000).toISOString(); // 301 seconds ago
-      data.authentification.message = JSON.stringify({ timestamp: oldTimestamp, certificateId: '123' });
+      data.authentification.message = JSON.stringify({
+        timestamp: oldTimestamp,
+        certificateId: '123',
+      });
 
       const callback = jest.fn();
       await readCertificate(data, callback, configuration);
@@ -222,7 +221,6 @@ describe('readCertificate', () => {
       // Expect the callback to have been called with the SIGNATURETOOOLD error
       expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.SIGNATURETOOOLD));
     });
-
 
     test('should succeed when the signature is valid and matches the issuer', async () => {
       wallet.web3.eth.accounts.recover = jest.fn(() => 'someIssuer');
@@ -235,7 +233,6 @@ describe('readCertificate', () => {
       await readCertificate(validSignatureData, callback, configuration);
       expect(callback).toHaveBeenCalledWith(null, { content: 'sample-content' });
     });
-
 
     test('should succeed when the signature is valid and matches the proof key', async () => {
       wallet.web3.eth.accounts.recover = jest.fn(() => 'someProofKey');
@@ -255,9 +252,26 @@ describe('readCertificate', () => {
       expect(callback).toHaveBeenCalledWith(null, { content: 'sample-content' });
     });
 
+    it('should work with a message/signature and correctly lowercase the needed data', async () => {
+      wallet.web3.eth.accounts.recover = jest.fn(() => 'someOwner');
 
+      const data = {
+        certificateId: '84801077',
+        authentification: {
+          message: '{"certificateId":"84801077","timestamp":"2023-09-13T12:14:18.711Z"}',
+          signature:
+            '0x667c2b9eddaca95e57861027a98d6bf4c2b92daff6746be36bdc4f39a5fd2915075dbedd304d6121fbaa3e472f93869260f1c003e05f0557519823a32a3fcf381b',
+          messageHash: '0x0738b04b872fe8d68fa24c0ec3cd69a0ba15a78021c4e38ed4028c4ac80e0e72',
+        },
+      };
 
-  })
+      const callback = jest.fn();
+
+      await readCertificate(data, callback, configuration);
+
+      expect(callback).toHaveBeenCalledWith(null, expect.any(Object));
+    });
+  });
 
   // Add more test cases:
   // - when bearer is invalid
@@ -265,6 +279,4 @@ describe('readCertificate', () => {
   // - when signature is from owner/issuer/key
   // - when neither bearer nor signature is present
   // and so on...
-
 });
-
