@@ -38,7 +38,7 @@ export const readCertificate = async (data: CertificatePayload, callback: SyncFu
     const ownerAddress = owner.toLowerCase();
     const issuerAddress = issuer.toLowerCase();
 
-    if (payload.subId === +certificateId && (payloadIssuer === ownerAddress || payloadIssuer === issuerAddress)) {
+    if (+payload.subId === +certificateId && (payloadIssuer === ownerAddress || payloadIssuer === issuerAddress)) {
       return successCallBack();
     }
     else if(payload.sub === 'wallet' && (payloadIssuer === ownerAddress || payloadIssuer === issuerAddress)){
