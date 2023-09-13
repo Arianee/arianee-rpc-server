@@ -31,7 +31,7 @@ export const readCertificate = async (
     certificateId
   );
 
-  const lowercasedKeys = [requestKey, viewKey, proofKey].map((k) => k.toLowerCase());
+  const lowercasedKeys = [requestKey, viewKey, proofKey].map((k) => (k ?? '').toLowerCase());
 
   const lowercasedOwner = owner.toLowerCase();
   const lowercasedIssuer = issuer.toLowerCase();
