@@ -5,16 +5,15 @@ import {callBackFactory} from "../libs/callBackFactory";
 import {RPCNAME} from "../rpc-name";
 import {readCertificate} from "../../helpers/readCertificate";
 import {ReadConfiguration} from "../models/readConfiguration";
-import {ArianeeApiClient} from "@arianee/arianee-api-client";
 import {calculateImprint} from "../../helpers/calculateImprint";
-
-const arianeeApiClient = new ArianeeApiClient();
-
+import Core from "@arianee/core";
+import {ArianeeProtocolClient, callWrapper} from "@arianee/arianee-protocol-client";
 
 const updateRPCFactory = (configuration: ReadConfiguration) => {
 
     const {createItem, network, createWithoutValidationOnBC} = configuration;
-
+    const core = Core.fromRandom();
+    const arianeeProtocolClient = new ArianeeProtocolClient(core)
     const create = async (data: CertificatePayloadCreate, callback: SyncFunc) => {
         const {certificateId, json} = data;
 
@@ -26,16 +25,20 @@ const updateRPCFactory = (configuration: ReadConfiguration) => {
 
 
         try {
-            const response = await arianeeApiClient.network.getNft(
-                network,
-                certificateId
-            ).catch(() => undefined);
+            const update = await callWrapper(arianeeProtocolClient, configuration.network, {
+                protocolV1Action: async (protocolV1) =>
+                    protocolV1.updateSmartAssetContract.getUpdate(certificateId)
+                        .catch(() => undefined),
+                protocolV2Action: async (protocolV2) => {
+                    throw new Error('not yet implemented');
+                },
+            });
 
-            if (!response) {
+            if (!update || !update[0]) {
                 return successCallBackWithoutValidation();
             }
 
-            const {imprint} = response;
+            const imprint = update[1];
             const calculatedImprint = calculateImprint(json);
             if (calculatedImprint === imprint) {
                 return successCallBack();

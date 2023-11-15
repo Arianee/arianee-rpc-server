@@ -8,6 +8,8 @@ import {ArianeeAccessToken} from "@arianee/arianee-access-token";
 import {ArianeeApiClient} from "@arianee/arianee-api-client";
 import {ethers} from "ethers";
 import {calculateImprint} from "../../helpers/calculateImprint";
+import Core from "@arianee/core";
+import {ArianeeProtocolClient, callWrapper} from "@arianee/arianee-protocol-client";
 
 const arianeeApiClient = new ArianeeApiClient();
 
@@ -15,7 +17,8 @@ const arianeeApiClient = new ArianeeApiClient();
 const messageRPCFactory = (configuration: ReadConfiguration) => {
 
     const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
-
+    const core = Core.fromRandom();
+    const arianeeProtocolClient = new ArianeeProtocolClient(core)
     const create = async (data: MessagePayloadCreate, callback) => {
 
         const [successCallBack, sucessCallBackWithoutValidationOnBC] = callBackFactory(callback)([
@@ -26,18 +29,22 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
 
         const {messageId, json} = data;
 
-        const response = await arianeeApiClient.network.getMessage(
-            configuration.network,
-            messageId
-        ).catch(d => undefined);
+        const message = await callWrapper(arianeeProtocolClient, configuration.network, {
+            protocolV1Action: async (protocolV1) =>
+                protocolV1.messageContract.messages(messageId)
+                    .catch(() => undefined),
+            protocolV2Action: async (protocolV2) => {
+                throw new Error('not yet implemented');
+            },
+        });
 
 
-        if (response.imprint === '0x0000000000000000000000000000000000000000000000000000000000000000' && createWithoutValidationOnBC) {
+        if (message.imprint === '0x0000000000000000000000000000000000000000000000000000000000000000' && createWithoutValidationOnBC) {
             return sucessCallBackWithoutValidationOnBC()
         } else {
             try {
-                const imprint = calculateImprint(json);
-                if (response.imprint === imprint) {
+                const imprint = await calculateImprint(json);
+                if (message.imprint === imprint) {
                     return successCallBack();
                 } else {
                     return callback(getError(ErrorEnum.WRONGIMPRINT));
@@ -68,7 +75,6 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
             messageId
         )
 
-
         if (bearer) {
             let payload;
             try {
@@ -76,9 +82,14 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
             } catch (e) {
                 return callback(getError(ErrorEnum.WRONGJWT));
             }
-            if (payload.subId === messageBc.receiver && payload.iss === messageBc.receiver) {
+
+            const payloadIssuerLowerCase = payload.iss.toLowerCase();
+            const receiverLowerCase = messageBc.receiver.toLowerCase();
+            const senderLowerCase = messageBc.sender.toLowerCase();
+
+            if (payloadIssuerLowerCase === messageBc.receiver && payloadIssuerLowerCase === receiverLowerCase) {
                 return successCallBack();
-            } else if (payload.sub === 'wallet' && payload.iss === messageBc.receiver) {
+            } else if (payload.sub === 'wallet' && (payloadIssuerLowerCase === receiverLowerCase || payloadIssuerLowerCase === senderLowerCase)){
                 return successCallBack();
             } else {
                 return callback(getError(ErrorEnum.WRONGJWT));

@@ -63,8 +63,7 @@ export const readCertificate = async (
 
     if (message && signature) {
         const lowercasedPublicKeyOfSigner = (
-            // MAxime is looking at it
-            ethers.verifyMessage(message, signature)??''
+            ethers.verifyMessage(message, signature) ?? ''
         ).toLowerCase();
 
         const parsedMessage = JSON.parse(message);
@@ -89,7 +88,6 @@ export const readCertificate = async (
         }
 
         if (lowercasedKeys.includes(lowercasedPublicKeyOfSigner)) {
-
             return successCallBack();
         }
     }

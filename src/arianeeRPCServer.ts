@@ -2,8 +2,6 @@ import * as jayson from "jayson";
 import { RPCMethods } from "./rpc";
 import {AsyncFunc} from "./rpc/models/func";
 import {isDebug} from "./rpc/libs/isDebugMode";
-import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
-import {Arianee, NETWORK} from "@arianee/arianeejs";
 
 if(isDebug) {
   console.warn('!!!!!!!!!!!!!!!!!!!!!!')
@@ -14,7 +12,6 @@ export class ArianeeRPCCustom {
   private eventRPC;
   private messageRPC;
   private updateRPC;
-  private arianeeWallet: Promise<ArianeeWallet>;
 
   constructor(private network: string){
 

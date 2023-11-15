@@ -1,6 +1,6 @@
 {
   "name": "@arianee/arianee-rpc-server",
-  "version": "0.29.0",
+  "version": "0.30.0-develop1",
   "description": "",
   "main": "dist/",
   "scripts": {
@@ -23,29 +23,31 @@
     "url": "https://github.com/Arianee/arianee-rpc-server"
   },
   "dependencies": {
-    "@arianee/arianee-access-token": "^1.10.0",
-    "@arianee/arianee-api-client": "^1.10.0",
-    "@arianee/arianee-privacy-gateway-client": "^1.10.0",
-    "@arianee/creator": "^1.10.0",
-    "@arianee/core": "^1.10.0",
-    "@arianee/utils": "^1.10.0",
+    "@arianee/arianee-access-token": "^1.11.1",
+    "@arianee/arianee-api-client": "^1.11.1",
+    "@arianee/arianee-privacy-gateway-client": "^1.11.1",
+    "@arianee/arianee-protocol-client": "^1.11.1",
+    "@arianee/core": "^1.11.1",
+    "@arianee/creator": "^1.11.1",
+    "@arianee/utils": "^1.11.1",
     "axios": "^0.21.4",
     "ethers": "^6.8.1",
     "express": "^4.18.2",
     "isobjectmatchingmodel": "^1.0.1",
     "jayson": "3.0.2",
-    "jest-environment-node": "^26.6.2",
+    "jest-environment-node": "^29.7.0",
     "jrpc": "^3.1.2"
   },
   "devDependencies": {
-    "@types/jest": "^24.9.1",
+    "@arianee/wallet": "^1.11.1",
+    "@types/jest": "^29.5.8",
     "@types/node": "^12.20.55",
     "body-parser": "^1.20.2",
-    "jest": "^24.9.0",
+    "jest": "^29.7.0",
     "nodemon": "^2.0.22",
     "start-server-and-test": "^1.15.4",
     "text-encoding": "^0.7.0",
-    "ts-jest": "^24.3.0",
+    "ts-jest": "^29.1.1",
     "typescript": "^4.9.5"
   }
 }

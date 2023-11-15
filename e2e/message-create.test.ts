@@ -1,123 +1,96 @@
-import {Arianee, NETWORK} from "@arianee/arianeejs/dist/src";
-import {ArianeeWalletBuilder} from "@arianee/arianeejs/dist/src/core/wallet/walletBuilder";
-import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
 import {certificateContent} from "./mocks/certificateContent";
 import {cloneDeep} from 'lodash';
 import {messageContent} from "./mocks/messageContent";
-import axios from "axios";
 import {eventContent} from "./mocks/eventContent";
+import Core from "@arianee/core";
+import Wallet from "@arianee/wallet";
+import Creator from "@arianee/creator";
+import {ArianeePrivacyGatewayClient} from "@arianee/arianee-privacy-gateway-client";
+import {ArianeeAccessToken} from "@arianee/arianee-access-token";
 
 describe('Message', () => {
     let certificateId
     let messageId;
-    let arianee: ArianeeWalletBuilder;
-    let walletIssuer: ArianeeWallet;
-    let walletOwner: ArianeeWallet;
-    let walletRandom: ArianeeWallet;
+    let arianeePrivacyGatewayClientOwner:   ArianeePrivacyGatewayClient;
+    let arianeePrivacyGatewayClientRandom: ArianeePrivacyGatewayClient;
+    let arianeePrivacyGatewayClientIssuer: ArianeePrivacyGatewayClient;
+
+    let arianeeAccessTokenOwner: ArianeeAccessToken
+    const ownerMnemonic = process.env.OWNERMNEMONIC;
+    const issuerMnemonic = process.env.ISSUERMNEMONIC;
+
     beforeAll(async () => {
-        arianee = await new Arianee().init(NETWORK.arianeeTestnet);
-        walletIssuer = arianee.fromMnemonic("magic direct wrist cook share cliff remember sport endorse march equip earth")
-        walletOwner =  arianee.fromMnemonic("surge nice nose visa tiger will winner awkward dog admit response gospel");
-        walletRandom = arianee.fromRandomMnemonic();
-        const certificate = await walletIssuer.methods.createCertificate({content:certificateContent});
-        certificateId = certificate.certificateId
+        const issuerCore = Core.fromMnemonic(issuerMnemonic)
+        const randomCore = Core.fromRandom();
+        const ownerCore = Core.fromMnemonic(ownerMnemonic);
 
-        await walletOwner.methods.requestCertificateOwnership(certificateId, certificate.passphrase);
 
-        const message = await walletIssuer.methods.createMessage({certificateId,content:messageContent});
-        messageId = message.messageId
+        arianeePrivacyGatewayClientOwner = new ArianeePrivacyGatewayClient(ownerCore);
+        arianeePrivacyGatewayClientRandom = new ArianeePrivacyGatewayClient(randomCore);
+        arianeePrivacyGatewayClientIssuer = new ArianeePrivacyGatewayClient(issuerCore);
+
+        arianeeAccessTokenOwner = new ArianeeAccessToken(ownerCore);
+
+        certificateId = 51628187;
+        messageId =814092728
+
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: messageId, content: messageContent});
+
+
     });
-    test('should be able create content if content is equal to imprint', async (done) => {
-        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
+    test('should be able create content if content is equal to imprint', async () => {
+        arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
         expect(true).toBeTruthy();
-        done()
+
     });
 
 
-    test('should NOT be able create content if content is not equal to imprint', async (done) => {
-        let isInError = false;
+    test('should NOT be able create content if content is not equal to imprint', async () => {
         const certificateClone = cloneDeep(messageContent);
         certificateClone.title = 'anothertitle';
-        try {
-            await walletIssuer.methods.storeMessage(messageId, certificateClone, `${process.env.rpcURL}`);
-        } catch (e) {
-            isInError = true;
-        }
-        expect(isInError).toBeTruthy();
-
-        done()
-
-
+        const result = await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: certificateClone});
+        expect(result.error.message).toEqual("Imprint does not match content")
     });
 /*
-    test('should be able create content if messageId does not exist in bc', async (done) => {
+    test('should be able create content if messageId does not exist in bc', async () => {
         const certificateClone = cloneDeep(messageContent);
 console.log('start3')
         await wallet.methods.storeMessage(-1, certificateClone, process.env.rpcURL);
         expect(true).toBeTruthy();
-        console.log('done3')
-        done()
+        console.log('3')
+
     });*/
 
-    test('issuer should be able get content', async (done) => {
-        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
+    test('issuer should be able get content', async () => {
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
 
-        const result = await walletIssuer.methods.getMessage({
-            messageId,
-            query: {content: true},
-            url: 'http://localhost:3000/rpc'
-        });
-
-        expect(result.content.data).toEqual(messageContent);
-        done()
-
+        const result = await arianeePrivacyGatewayClientIssuer.messageRead(process.env.rpcURL, { messageId: messageId});
+        expect(result).toEqual(messageContent);
     })
 
-    test('owner should be able get content', async (done) => {
-        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
+    test('owner should be able get content', async () => {
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
 
-        const result = await walletOwner.methods.getMessage({
-            messageId,
-            query: {content: true},
-            url: 'http://localhost:3000/rpc'
-        });
-
-        expect(result.content.data).toEqual(messageContent);
-        done()
-
+        const result = await arianeePrivacyGatewayClientOwner.messageRead(process.env.rpcURL, { messageId: ""+messageId});
+        expect(result).toEqual(messageContent);
     })
 
-    test('random should not be able get content', async (done) => {
-        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
+    test('random should not be able get content', async () => {
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
 
-        const result = await walletRandom.methods.getMessage({
-            messageId,
-            query: {content: true},
-            url: 'http://localhost:3000/rpc'
-        }).catch(e=>undefined);
-
+        const result = await arianeePrivacyGatewayClientRandom.messageRead(process.env.rpcURL, { messageId: ""+messageId});
         expect(result).toBeUndefined();
-        done()
-
     })
 
 
-    test('random with wallet access token should be able get content', async (done) => {
-        await walletIssuer.methods.storeMessage(messageId, messageContent, `${process.env.rpcURL}`);
-        const arianeeJWT = await walletOwner.methods.createWalletAccessToken();
+    test('random with wallet access token should be able get content', async () => {
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
+        const arianeeJWT = await arianeeAccessTokenOwner.createWalletAccessToken();
+        const aatapgc = new ArianeePrivacyGatewayClient(arianeeJWT);
+        const result = await aatapgc.messageRead(process.env.rpcURL, { messageId: ""+messageId});
 
-        const result = await axios.post('http://localhost:3000/rpc', {
-            jsonrpc: '2.0',
-            method: "message.read",
-            params: {
-                messageId,
-                authentification: {bearer : arianeeJWT}
-            },
-            id: '1'
-        })
 
-        expect(result.data.result).toEqual(messageContent);
-        done()
+        expect(result).toEqual(messageContent);
     })
 
 });
