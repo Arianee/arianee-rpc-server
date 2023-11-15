@@ -4,13 +4,17 @@ import {MessagePayload, MessagePayloadCreate} from "../models/messages";
 import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
 import {ReadConfiguration} from "../models/readConfiguration";
-import {ContractName} from "@arianee/arianeejs/dist/src/core/wallet/services/contractService/contractsService";
 import {ArianeeAccessToken} from "@arianee/arianee-access-token";
+import {ArianeeApiClient} from "@arianee/arianee-api-client";
+import {ethers} from "ethers";
+import {calculateImprint} from "../../helpers/calculateImprint";
+
+const arianeeApiClient = new ArianeeApiClient();
 
 
 const messageRPCFactory = (configuration: ReadConfiguration) => {
 
-    const {fetchItem, createItem, arianeeWallet, createWithoutValidationOnBC} = configuration;
+    const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
 
     const create = async (data: MessagePayloadCreate, callback) => {
 
@@ -22,26 +26,22 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
 
         const {messageId, json} = data;
 
-        const tempWallet =await arianeeWallet;
+        const response = await arianeeApiClient.network.getMessage(
+            configuration.network,
+            messageId
+        ).catch(d => undefined);
 
-        const message = await tempWallet.contracts.messageContract.methods.messages(messageId)
-            .call()
-            .catch(d => undefined);
 
-        if (message.imprint === '0x0000000000000000000000000000000000000000000000000000000000000000' && createWithoutValidationOnBC) {
+        if (response.imprint === '0x0000000000000000000000000000000000000000000000000000000000000000' && createWithoutValidationOnBC) {
             return sucessCallBackWithoutValidationOnBC()
         } else {
             try {
-                axios.get(json.$schema)
-                    .then(async (response) => {
-                        const schema = response.data;
-                        const imprint = await tempWallet.utils.cert(schema, json);
-                        if (message[0] === imprint) {
-                            return successCallBack();
-                        } else {
-                            return callback(getError(ErrorEnum.WRONGIMPRINT));
-                        }
-                    });
+                const imprint = calculateImprint(json);
+                if (response.imprint === imprint) {
+                    return successCallBack();
+                } else {
+                    return callback(getError(ErrorEnum.WRONGIMPRINT));
+                }
             } catch (err) {
                 return callback(getError(ErrorEnum.WRONGMESSAGEID));
             }
@@ -59,38 +59,34 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
             }
         };
 
-        const tempWallet =await arianeeWallet;
 
-        const { authentification, messageId } = data;
-        const { message, signature, bearer } = authentification;
+        const {authentification, messageId} = data;
+        const {message, signature, bearer} = authentification;
 
-        const messageBc = await tempWallet.contracts[ContractName.messageContract].methods
-            .messages(messageId)
-            .call();
+        const messageBc = await arianeeApiClient.network.getMessage(
+            configuration.network,
+            messageId
+        )
+
 
         if (bearer) {
             let payload;
-            try{
+            try {
                 payload = ArianeeAccessToken.decodeJwt(bearer).payload;   // decode test that aat is valid and throw if not
-            }
-            catch (e) {
+            } catch (e) {
                 return callback(getError(ErrorEnum.WRONGJWT));
             }
-            if (payload.subId === messageBc.to && payload.iss === messageBc.to) {
+            if (payload.subId === messageBc.receiver && payload.iss === messageBc.receiver) {
                 return successCallBack();
-            }
-            else if(payload.sub === 'wallet' && payload.iss === messageBc.to){
+            } else if (payload.sub === 'wallet' && payload.iss === messageBc.receiver) {
                 return successCallBack();
-            }
-            else {
+            } else {
                 return callback(getError(ErrorEnum.WRONGJWT));
             }
         }
 
-        const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
-            message,
-            signature
-        );
+        const publicAddressOfSender = ethers.verifyMessage(message, signature);
+
 
         const parsedMessage = JSON.parse(message);
         const isSignatureTooOld =
@@ -103,9 +99,12 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
 
         // Is the message exist
         try {
-            const arianeeMessage = await tempWallet.contracts.messageContract.methods.messages(messageId).call();
 
-            if (arianeeMessage.to !== publicAddressOfSender && arianeeMessage.sender !== publicAddressOfSender) {
+            const arianeeMessage = await arianeeApiClient.network.getMessage(
+                configuration.network,
+                messageId
+            )
+            if (!arianeeMessage && arianeeMessage.receiver !== publicAddressOfSender && arianeeMessage.sender !== publicAddressOfSender) {
                 return callback(getError(ErrorEnum.MAINERROR));
             } else {
                 return successCallBack();
@@ -123,4 +122,4 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
     };
 };
 
-export { messageRPCFactory };
+export {messageRPCFactory};

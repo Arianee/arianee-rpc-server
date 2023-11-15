@@ -1,5 +1,4 @@
 import {RPCNAME} from "../rpc-name";
-import {Arianee} from "@arianee/arianeejs";
 import {CertificatePayload, CertificatePayloadCreate} from "../models/certificates";
 import {SyncFunc} from "../models/func";
 import axios from 'axios';
@@ -7,11 +6,14 @@ import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
 import {ReadConfiguration} from "../models/readConfiguration";
 import {readCertificate} from "../../helpers/readCertificate";
+import {ArianeeApiClient} from "@arianee/arianee-api-client";
+import {calculateImprint} from "../../helpers/calculateImprint";
 
 
 const certificateRPCFactory = (configuration:ReadConfiguration) => {
 
-  const {fetchItem, createItem, arianeeWallet, createWithoutValidationOnBC} = configuration;
+  const {fetchItem, createItem, createWithoutValidationOnBC} = configuration;
+  const arianeeApiClient = new ArianeeApiClient();
 
 
   /**
@@ -28,45 +30,34 @@ const certificateRPCFactory = (configuration:ReadConfiguration) => {
           () => createWithoutValidationOnBC(certificateId, json)
         ]);
 
-    const tempWallet = await arianeeWallet;
 
-    let tokenImprint,res;
-    const isTokenIdExist: boolean = await tempWallet
-        .contracts
-        .smartAssetContract
-        .methods
-        .ownerOf(certificateId.toString())
-        .call()
-        .then(() => true)
-        .catch(() => false);
+    const response = await arianeeApiClient.network.getNft(
+        configuration.network,
+        certificateId
+    ).catch(() => undefined);
+
+    const isTokenIdExist=!!response;
+
 
     const createCertificateIfTokenIdExist = async () => {
+      const   {issuer, imprint, owner, requestKey, viewKey, proofKey} = response;
+let imprintCalculated;
       try {
-        tokenImprint = await tempWallet.contracts.smartAssetContract.methods
-            .tokenImprint(certificateId.toString())
-            .call();
 
         // case of reseved token
-        if (tokenImprint === '0x0000000000000000000000000000000000000000000000000000000000000000'
+        if (imprint === '0x0000000000000000000000000000000000000000000000000000000000000000'
             && createWithoutValidationOnBC) {
           return successCallBackWithoutValidation();
         }
 
-        res = await axios(
-            json.$schema
-        );
+        imprintCalculated= await calculateImprint(json);
       } catch (e) {
         return callback(getError(ErrorEnum.WRONGIMPRINT));
       }
 
-      const certificateSchema = res.data;
 
-      const hash = await tempWallet.utils.cert(
-          certificateSchema,
-          json
-      );
 
-      if (hash === tokenImprint) {
+      if (imprintCalculated() === imprint) {
         return successCallBack();
       } else {
         return callback(getError(ErrorEnum.WRONGIMPRINT));
