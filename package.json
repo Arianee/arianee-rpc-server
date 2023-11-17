@@ -30,7 +30,7 @@
     "@arianee/core": "^1.11.1",
     "@arianee/creator": "^1.11.1",
     "@arianee/utils": "^1.11.1",
-    "axios": "^0.21.4",
+    "axios": "^1.6.0",
     "ethers": "^6.8.1",
     "express": "^4.18.2",
     "isobjectmatchingmodel": "^1.0.1",
