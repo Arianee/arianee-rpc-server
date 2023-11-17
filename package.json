@@ -1,6 +1,6 @@
 {
   "name": "@arianee/arianee-rpc-server",
-  "version": "0.30.0-develop1",
+  "version": "0.31.0",
   "description": "",
   "main": "dist/",
   "scripts": {
