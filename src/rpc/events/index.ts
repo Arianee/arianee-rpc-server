@@ -1,48 +1,49 @@
 import {RPCNAME} from "../rpc-name";
-import {Arianee} from "@arianee/arianeejs";
-import axios from 'axios';
 import {EventPayload, EventPayloadCreate} from "../models/events";
 import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
 import {ReadConfiguration} from "../models/readConfiguration";
 import {ArianeeAccessToken} from "@arianee/arianee-access-token";
+import {ArianeeApiClient} from "@arianee/arianee-api-client";
+import {calculateImprint} from "../../helpers/calculateImprint";
+import {ethers} from "ethers";
+import {ArianeeProtocolClient, callWrapper} from "@arianee/arianee-protocol-client";
+import Core from "@arianee/core";
 
+const arianeeApiClient = new ArianeeApiClient();
 
-const eventRPCFactory = (configuration:ReadConfiguration) => {
-
-    const {fetchItem, createItem, arianeeWallet, createWithoutValidationOnBC} = configuration;
-
+const eventRPCFactory = (configuration: ReadConfiguration) => {
+    const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
+    const core = Core.fromRandom();
+    const arianeeProtocolClient = new ArianeeProtocolClient(core)
     const create = async (data: EventPayloadCreate, callback) => {
+        const {eventId, json} = data;
 
         const [successCallBack, successCallbackWithoutValidation] = callBackFactory(callback)([
             () => createItem(eventId, json),
             () => createWithoutValidationOnBC(eventId, json),
         ]);
 
-        const { eventId, json} = data;
-
-        const tempWallet =await arianeeWallet;
-
-        const event = await tempWallet.contracts.eventContract.methods.getEvent(eventId).call()
-            .catch(() => undefined);
+        const event = await callWrapper(arianeeProtocolClient, configuration.network, {
+            protocolV1Action: async (protocolV1) => protocolV1.eventContract.getFunction('getEvent')(eventId)
+                .catch(() => undefined),
+            protocolV2Action: async (protocolV2) => {
+                throw new Error('not yet implemented');
+            },
+        });
 
         if (event === undefined && createWithoutValidationOnBC) {
             return successCallbackWithoutValidation()
         } else {
-
             try {
-                const event = await tempWallet.contracts.eventContract.methods.getEvent(eventId).call();
-                axios.get(json.$schema)
-                    .then(async (response) => {
-                        const schema = response.data;
-                        const imprint = await tempWallet.utils.cert(schema, json);
-                        if (event[1] === imprint) {
-                            return successCallBack();
-                        } else {
-                            return callback(getError(ErrorEnum.MAINERROR));
+                const imprint = event[1];
+                const calculatedImprint=await calculateImprint(json);
+                if (imprint === calculatedImprint) {
+                    return successCallBack();
+                } else {
+                    return callback(getError(ErrorEnum.MAINERROR));
 
-                        }
-                    });
+                }
             } catch (err) {
                 return callback(getError(ErrorEnum.MAINERROR));
             }
@@ -56,52 +57,40 @@ const eventRPCFactory = (configuration:ReadConfiguration) => {
                 return callback(null, content);
             } catch (err) {
                 return callback(getError(ErrorEnum.MAINERROR));
-
             }
         };
 
-        const tempWallet =await arianeeWallet;
-
         const {certificateId, authentification, eventId} = data;
         const {message, signature, bearer} = authentification;
-        const owner = await tempWallet.contracts.smartAssetContract.methods
-            .ownerOf(certificateId)
-            .call();
 
-        const issuer = await tempWallet
-            .contracts
-            .smartAssetContract
-            .methods
-            .issuerOf(certificateId)
-            .call();
+        const {issuer, owner, requestKey, viewKey, proofKey} = await arianeeApiClient.network.getNft(
+            network,
+            certificateId
+        );
 
         if (bearer) {
-
             let payload;
-            try{
+            try {
                 payload = ArianeeAccessToken.decodeJwt(bearer).payload;   // decode test that aat is valid and throw if not
-            }
-            catch (e) {
+            } catch (e) {
                 return callback(getError(ErrorEnum.WRONGJWT));
             }
 
-            if (payload.subId === certificateId && (payload.iss === owner || payload.iss === issuer)) {
+            const payloadIssuerLowerCase = payload.iss.toLowerCase();
+            const nftOwnerLowerCase = owner.toLowerCase();
+            const nftIssuerLowerCase = issuer.toLowerCase();
+
+            if (payload.subId === certificateId && (payloadIssuerLowerCase === nftOwnerLowerCase || payloadIssuerLowerCase === nftIssuerLowerCase)) {
                 return successCallBack();
-            }
-            else if(payload.sub === 'wallet' && (payload.iss === owner || payload.iss === issuer)){
+            } else if (payload.sub === 'wallet' && (payloadIssuerLowerCase === nftOwnerLowerCase || payloadIssuerLowerCase === nftIssuerLowerCase)) {
                 return successCallBack();
-            }
-            else {
+            } else {
                 return callback(getError(ErrorEnum.WRONGJWT));
             }
         }
 
         if (message && signature) {
-
-            const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
-                message,
-                signature
-            );
+            const publicAddressOfSender = ethers.verifyMessage(message, signature);
 
             const parsedMessage = JSON.parse(message);
 
@@ -121,13 +110,12 @@ const eventRPCFactory = (configuration:ReadConfiguration) => {
 
             // Is the event exist
             try {
-                await tempWallet.contracts.eventContract.methods.getEvent(eventId).call();
+                await arianeeApiClient.network.getArianeeEvent(configuration.network, eventId)
             } catch (err) {
                 return callback(getError(ErrorEnum.MAINERROR));
             }
 
             // Is user the owner of this certificate
-
             if (owner === publicAddressOfSender) {
                 return successCallBack();
             }
@@ -138,15 +126,9 @@ const eventRPCFactory = (configuration:ReadConfiguration) => {
                 return successCallBack();
             }
 
-            // Is the user provide a token access
-            for (let tokenType = 0; tokenType < 4; tokenType++) {
-                const data = await tempWallet.contracts.smartAssetContract.methods
-                    .tokenHashedAccess(certificateId, tokenType)
-                    .call();
-
-                if (publicAddressOfSender === data) {
-                    return successCallBack();
-                }
+            const lowercasedKeys = [requestKey, viewKey, proofKey].map((k) => (k ?? '').toLowerCase());
+            if (lowercasedKeys.includes(publicAddressOfSender.toLowerCase())) {
+                return successCallBack();
             }
         }
 
@@ -160,4 +142,4 @@ const eventRPCFactory = (configuration:ReadConfiguration) => {
     };
 };
 
-export { eventRPCFactory };
+export {eventRPCFactory};

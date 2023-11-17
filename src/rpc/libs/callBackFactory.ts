@@ -7,6 +7,7 @@ export const callBackFactory = (RPCCallback) => (functionToCalls: any[]) => {
                 const result = await functionToCall();
                 return RPCCallback(null, result);
             } catch (err) {
+              console.log('err', err)
                 return RPCCallback(getError(ErrorEnum.CALLBACKIMPLEMENTATION));
             }
         })

@@ -2,8 +2,6 @@ import * as jayson from "jayson";
 import { RPCMethods } from "./rpc";
 import {AsyncFunc} from "./rpc/models/func";
 import {isDebug} from "./rpc/libs/isDebugMode";
-import {ArianeeWallet} from "@arianee/arianeejs/dist/src/core/wallet";
-import {Arianee, NETWORK} from "@arianee/arianeejs";
 
 if(isDebug) {
   console.warn('!!!!!!!!!!!!!!!!!!!!!!')
@@ -14,19 +12,11 @@ export class ArianeeRPCCustom {
   private eventRPC;
   private messageRPC;
   private updateRPC;
-  private arianeeWallet: Promise<ArianeeWallet>;
 
-  constructor(network: NETWORK);
-  constructor(network: string);
-  constructor(network: ArianeeWallet);
-  constructor(walletOrNetwork: string | any) {
-    if (typeof walletOrNetwork === 'string') {
-      this.arianeeWallet = new Arianee().init(walletOrNetwork as NETWORK)
-          .then(arianee => arianee.readOnlyWallet())
-    } else {
-      this.arianeeWallet = walletOrNetwork as any;
-    }
+  constructor(private network: string){
+
   }
+
 
   /**
    * Set methods to fetch and create certificate content
@@ -39,7 +29,7 @@ export class ArianeeRPCCustom {
       fetchItem,
       createItem,
       createWithoutValidationOnBC,
-      arianeeWallet: this.arianeeWallet
+      network:this.network
     });
     return this;
   }
@@ -52,7 +42,8 @@ export class ArianeeRPCCustom {
   public setEventContentMethods(fetchItem: AsyncFunc, createItem: AsyncFunc, createWithoutValidationOnBC?: AsyncFunc) {
     this.eventRPC = RPCMethods.eventRPCFactory({
       fetchItem, createItem, createWithoutValidationOnBC,
-      arianeeWallet: this.arianeeWallet
+      network:this.network
+
     });
     return this;
   }
@@ -66,7 +57,7 @@ export class ArianeeRPCCustom {
     this.messageRPC = RPCMethods.messageRPCFactory(
         {
           fetchItem, createItem, createWithoutValidationOnBC,
-          arianeeWallet: this.arianeeWallet
+          network:this.network
 
         }
     );
@@ -77,7 +68,7 @@ export class ArianeeRPCCustom {
     this.updateRPC = RPCMethods.updateRPCFactory(
       {
         fetchItem, createItem, createWithoutValidationOnBC,
-        arianeeWallet:this.arianeeWallet
+        network:this.network
       }
     )
     return this;

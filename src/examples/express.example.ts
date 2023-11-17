@@ -1,4 +1,3 @@
-import {NETWORK} from "@arianee/arianeejs";
 import {SessionDBRPC} from "./sessionDB";
 
 const express = require("express");
@@ -7,7 +6,7 @@ const port = process.env.PORT || 3000;
 console.log("port",port)
 var bodyParser = require("body-parser");
 
-const $arianeeRpcServer = SessionDBRPC(NETWORK.arianeeTestnet);
+const $arianeeRpcServer = SessionDBRPC("mainnet");
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());

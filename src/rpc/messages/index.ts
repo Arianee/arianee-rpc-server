@@ -4,14 +4,21 @@ import {MessagePayload, MessagePayloadCreate} from "../models/messages";
 import {ErrorEnum, getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
 import {ReadConfiguration} from "../models/readConfiguration";
-import {ContractName} from "@arianee/arianeejs/dist/src/core/wallet/services/contractService/contractsService";
 import {ArianeeAccessToken} from "@arianee/arianee-access-token";
+import {ArianeeApiClient} from "@arianee/arianee-api-client";
+import {ethers} from "ethers";
+import {calculateImprint} from "../../helpers/calculateImprint";
+import Core from "@arianee/core";
+import {ArianeeProtocolClient, callWrapper} from "@arianee/arianee-protocol-client";
+
+const arianeeApiClient = new ArianeeApiClient();
 
 
 const messageRPCFactory = (configuration: ReadConfiguration) => {
 
-    const {fetchItem, createItem, arianeeWallet, createWithoutValidationOnBC} = configuration;
-
+    const {fetchItem, createItem, network, createWithoutValidationOnBC} = configuration;
+    const core = Core.fromRandom();
+    const arianeeProtocolClient = new ArianeeProtocolClient(core)
     const create = async (data: MessagePayloadCreate, callback) => {
 
         const [successCallBack, sucessCallBackWithoutValidationOnBC] = callBackFactory(callback)([
@@ -22,26 +29,26 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
 
         const {messageId, json} = data;
 
-        const tempWallet =await arianeeWallet;
+        const message = await callWrapper(arianeeProtocolClient, configuration.network, {
+            protocolV1Action: async (protocolV1) =>
+                protocolV1.messageContract.messages(messageId)
+                    .catch(() => undefined),
+            protocolV2Action: async (protocolV2) => {
+                throw new Error('not yet implemented');
+            },
+        });
 
-        const message = await tempWallet.contracts.messageContract.methods.messages(messageId)
-            .call()
-            .catch(d => undefined);
 
         if (message.imprint === '0x0000000000000000000000000000000000000000000000000000000000000000' && createWithoutValidationOnBC) {
             return sucessCallBackWithoutValidationOnBC()
         } else {
             try {
-                axios.get(json.$schema)
-                    .then(async (response) => {
-                        const schema = response.data;
-                        const imprint = await tempWallet.utils.cert(schema, json);
-                        if (message[0] === imprint) {
-                            return successCallBack();
-                        } else {
-                            return callback(getError(ErrorEnum.WRONGIMPRINT));
-                        }
-                    });
+                const imprint = await calculateImprint(json);
+                if (message.imprint === imprint) {
+                    return successCallBack();
+                } else {
+                    return callback(getError(ErrorEnum.WRONGIMPRINT));
+                }
             } catch (err) {
                 return callback(getError(ErrorEnum.WRONGMESSAGEID));
             }
@@ -59,38 +66,38 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
             }
         };
 
-        const tempWallet =await arianeeWallet;
 
-        const { authentification, messageId } = data;
-        const { message, signature, bearer } = authentification;
+        const {authentification, messageId} = data;
+        const {message, signature, bearer} = authentification;
 
-        const messageBc = await tempWallet.contracts[ContractName.messageContract].methods
-            .messages(messageId)
-            .call();
+        const messageBc = await arianeeApiClient.network.getMessage(
+            configuration.network,
+            messageId
+        )
 
         if (bearer) {
             let payload;
-            try{
+            try {
                 payload = ArianeeAccessToken.decodeJwt(bearer).payload;   // decode test that aat is valid and throw if not
-            }
-            catch (e) {
+            } catch (e) {
                 return callback(getError(ErrorEnum.WRONGJWT));
             }
-            if (payload.subId === messageBc.to && payload.iss === messageBc.to) {
+
+            const payloadIssuerLowerCase = payload.iss.toLowerCase();
+            const receiverLowerCase = messageBc.receiver.toLowerCase();
+            const senderLowerCase = messageBc.sender.toLowerCase();
+
+            if (payloadIssuerLowerCase === messageBc.receiver && payloadIssuerLowerCase === receiverLowerCase) {
                 return successCallBack();
-            }
-            else if(payload.sub === 'wallet' && payload.iss === messageBc.to){
+            } else if (payload.sub === 'wallet' && (payloadIssuerLowerCase === receiverLowerCase || payloadIssuerLowerCase === senderLowerCase)){
                 return successCallBack();
-            }
-            else {
+            } else {
                 return callback(getError(ErrorEnum.WRONGJWT));
             }
         }
 
-        const publicAddressOfSender = tempWallet.web3.eth.accounts.recover(
-            message,
-            signature
-        );
+        const publicAddressOfSender = ethers.verifyMessage(message, signature);
+
 
         const parsedMessage = JSON.parse(message);
         const isSignatureTooOld =
@@ -103,9 +110,12 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
 
         // Is the message exist
         try {
-            const arianeeMessage = await tempWallet.contracts.messageContract.methods.messages(messageId).call();
 
-            if (arianeeMessage.to !== publicAddressOfSender && arianeeMessage.sender !== publicAddressOfSender) {
+            const arianeeMessage = await arianeeApiClient.network.getMessage(
+                configuration.network,
+                messageId
+            )
+            if (!arianeeMessage && arianeeMessage.receiver !== publicAddressOfSender && arianeeMessage.sender !== publicAddressOfSender) {
                 return callback(getError(ErrorEnum.MAINERROR));
             } else {
                 return successCallBack();
@@ -123,4 +133,4 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
     };
 };
 
-export { messageRPCFactory };
+export {messageRPCFactory};

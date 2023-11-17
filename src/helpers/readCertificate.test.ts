@@ -3,6 +3,7 @@ import { ArianeeApiClient } from '@arianee/arianee-api-client';
 import { ArianeeAccessToken } from '@arianee/arianee-access-token';
 import { ErrorEnum, getError } from '../rpc/errors/error';
 
+
 jest.mock('@arianee/arianee-api-client', () => {
   return {
     ArianeeApiClient: jest.fn().mockImplementation(() => {
@@ -21,7 +22,18 @@ jest.mock('@arianee/arianee-api-client', () => {
   };
 });
 jest.mock('@arianee/arianee-access-token');
-
+jest.mock('ethers', ()=>{
+  return{
+    ethers:{
+        verifyMessage:(message:string, signature:string)=>{
+          if(signature === "0x0de47a78ee3e683fdfa57c654e80e9d51aea1d6192c5dcd00d548d28e9383d3f42685c9a383549fdca36e89cc05bf4a4ff82ad4d18c1bc8094daa0f2f80ce5c61b"){
+            return "someOwner"
+          }
+          return "notOwner";
+        }
+    }
+  }
+});
 describe('readCertificate', () => {
   let configuration: any;
   let data: any;
@@ -190,7 +202,7 @@ describe('readCertificate', () => {
         certificateId: '123',
         authentification: {
           message: 'someMessage',
-          signature: 'someSignature',
+          signature: '0x262d6e00093044c5b3326372bdde4dddd39c91b4094fd253ecbbe4f593f7ecac66fe9fb95c37dee4722019d99f9d2dddbf328e838f5c65c7713cb9111f431ae31b',
         },
       };
       configuration.fetchItem.mockResolvedValueOnce({ content: 'sample-content' });
@@ -202,7 +214,7 @@ describe('readCertificate', () => {
             certificateId: 123,
             timestamp: new Date().toISOString(), // Current timestamp
           }),
-          signature: 'someValidSignature',
+          signature: '0x0de47a78ee3e683fdfa57c654e80e9d51aea1d6192c5dcd00d548d28e9383d3f42685c9a383549fdca36e89cc05bf4a4ff82ad4d18c1bc8094daa0f2f80ce5c61b',
         },
       };
 
@@ -260,7 +272,7 @@ describe('readCertificate', () => {
         authentification: {
           message: '{"certificateId":"84801077","timestamp":"2023-09-13T12:14:18.711Z"}',
           signature:
-            '0x667c2b9eddaca95e57861027a98d6bf4c2b92daff6746be36bdc4f39a5fd2915075dbedd304d6121fbaa3e472f93869260f1c003e05f0557519823a32a3fcf381b',
+            '0x0de47a78ee3e683fdfa57c654e80e9d51aea1d6192c5dcd00d548d28e9383d3f42685c9a383549fdca36e89cc05bf4a4ff82ad4d18c1bc8094daa0f2f80ce5c61b',
           messageHash: '0x0738b04b872fe8d68fa24c0ec3cd69a0ba15a78021c4e38ed4028c4ac80e0e72',
         },
       };

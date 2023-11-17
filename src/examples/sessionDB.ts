@@ -1,5 +1,4 @@
 import {ArianeeRPCCustom} from "../arianeeRPCServer";
-import {Arianee, NETWORK} from "@arianee/arianeejs/dist/src";
 
 const certificatesDB={};
 const eventsDB={};
@@ -7,17 +6,15 @@ const messagesDB={};
 const updateDB={};
 
 
-export const SessionDBRPC = async (network=NETWORK.testnet)=> {
-    const arianee = await new Arianee().init(network);
-    const wallet = arianee.readOnlyWallet();
+export const SessionDBRPC = async (network="arianeeTestnet")=> {
 
-    return new ArianeeRPCCustom(wallet)
+    return new ArianeeRPCCustom(network)
         .setCertificateContentMethods(
             (certificateid: string) => {
-                return Promise.resolve(certificatesDB[certificateid.toString()])
+                return Promise.resolve(certificatesDB[certificateid])
             },
             (certificateid: string, data) => {
-                certificatesDB[certificateid.toString()] = data;
+                certificatesDB[certificateid] = data;
                 return Promise.resolve();
             },
             (certificateid: string, data) => {
@@ -27,43 +24,43 @@ export const SessionDBRPC = async (network=NETWORK.testnet)=> {
         )
         .setEventContentMethods(
             (certificateid) => {
-                return Promise.resolve(eventsDB[certificateid.toString()])
+                return Promise.resolve(eventsDB[certificateid])
             },
             (certificateid: string, data) => {
-                eventsDB[certificateid.toString()] = data;
+                eventsDB[certificateid] = data;
                 return Promise.resolve();
             },
             (certificateid: string, data) => {
-                eventsDB[certificateid.toString()] = data;
+                eventsDB[certificateid] = data;
                 return Promise.resolve();
             }
         )
         .setMessageContentMethods(
             (messageId) => {
-                return Promise.resolve(messagesDB[messageId.toString()])
+                return Promise.resolve(messagesDB[messageId])
             },
             (messageId: string, data) => {
-                messagesDB[messageId.toString()] = data;
+                messagesDB[messageId] = data;
                 return Promise.resolve();
             },
             (messageId: string, data) => {
-                messagesDB[messageId.toString()] = data;
+                messagesDB[messageId] = data;
                 return Promise.resolve();
             })
         .setUpdateContentMethods(
             (updateId) => {
-                let data = updateDB[updateId.toString()];
+                let data = updateDB[updateId];
                 if (!data) {
-                    data = certificatesDB[updateId.toString()]
+                    data = certificatesDB[updateId]
                 }
                 return Promise.resolve(data)
             },
             (updateId: string, data) => {
-                updateDB[updateId.toString()] = data;
+                updateDB[updateId] = data;
                 return Promise.resolve();
             },
             (updateId: string, data) => {
-                updateDB[updateId.toString()] = data;
+                updateDB[updateId] = data;
                 return Promise.resolve();
             })
         .build();
