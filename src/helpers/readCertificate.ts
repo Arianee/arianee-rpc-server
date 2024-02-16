@@ -13,23 +13,25 @@ export const readCertificate = async (
     configuration: ReadConfiguration
 ) => {
     const {fetchItem, network} = configuration;
-    const successCallBack = async () => {
-        try {
-            const content = await fetchItem(certificateId);
-            return callback(null, content);
-        } catch (err) {
-            return callback(getError(ErrorEnum.MAINERROR));
-        }
-    };
+
 
 
     const {certificateId, authentification} = data;
     const {message, signature, bearer} = authentification;
 
-    const {issuer, owner, requestKey, viewKey, proofKey} = await arianeeApiClient.network.getNft(
+    const {issuer, owner, requestKey, viewKey, proofKey, imprint} = await arianeeApiClient.network.getNft(
         network,
         certificateId
     );
+
+    const successCallBack = async () => {
+        try {
+            const content = await fetchItem(certificateId, imprint);
+            return callback(null, content);
+        } catch (err) {
+            return callback(getError(ErrorEnum.MAINERROR));
+        }
+    };
 
     const lowercasedKeys = [requestKey, viewKey, proofKey].map((k) => (k ?? '').toLowerCase());
 
