@@ -115,7 +115,7 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
                 configuration.network,
                 messageId
             )
-            if (!arianeeMessage && arianeeMessage.receiver !== publicAddressOfSender && arianeeMessage.sender !== publicAddressOfSender) {
+            if (!arianeeMessage && arianeeMessage.receiver.toLowerCase() !== publicAddressOfSender.toLowerCase() && arianeeMessage.sender.toLowerCase() !== publicAddressOfSender.toLowerCase()) {
                 return callback(getError(ErrorEnum.MAINERROR));
             } else {
                 return successCallBack();

@@ -60,6 +60,7 @@ const eventRPCFactory = (configuration: ReadConfiguration) => {
             }
         };
 
+
         const {certificateId, authentification, eventId} = data;
         const {message, signature, bearer} = authentification;
 
@@ -115,14 +116,15 @@ const eventRPCFactory = (configuration: ReadConfiguration) => {
                 return callback(getError(ErrorEnum.MAINERROR));
             }
 
+
             // Is user the owner of this certificate
-            if (owner === publicAddressOfSender) {
+            if (owner.toLowerCase() === publicAddressOfSender.toLowerCase()) {
                 return successCallBack();
             }
 
             // Is user the issuer of this certificate
 
-            if (issuer === publicAddressOfSender) {
+            if (issuer.toLowerCase() === publicAddressOfSender.toLowerCase()) {
                 return successCallBack();
             }
 
