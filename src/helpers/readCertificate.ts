@@ -47,15 +47,18 @@ export const readCertificate = async (
         }
 
         const lowercasedPayloadIssuer = payload.iss.toLowerCase();
+        const isOwnerOrIssuerOfNft = (lowercasedPayloadIssuer === lowercasedOwner || lowercasedPayloadIssuer === lowercasedIssuer);
+
+        if(!isOwnerOrIssuerOfNft) {
+            return callback(getError(ErrorEnum.NOTOWNERORISSUER));
+        }
 
         if (
-            +payload.subId === +certificateId &&
-            (lowercasedPayloadIssuer === lowercasedOwner || lowercasedPayloadIssuer === lowercasedIssuer)
+            +payload.subId === +certificateId
         ) {
             return successCallBack();
         } else if (
-            payload.sub === 'wallet' &&
-            (lowercasedPayloadIssuer === lowercasedOwner || lowercasedPayloadIssuer === lowercasedIssuer)
+            payload.sub === 'wallet'
         ) {
             return successCallBack();
         } else {
@@ -75,7 +78,7 @@ export const readCertificate = async (
         }
 
         const isSignatureTooOld =
-            (new Date().getTime() - new Date(message.timestamp).getTime()) / 1000 > 300;
+            (new Date().getTime() - new Date(parsedMessage.timestamp).getTime()) / 1000 > 300;
 
         if (isSignatureTooOld) {
             return callback(getError(ErrorEnum.SIGNATURETOOOLD));
@@ -84,13 +87,14 @@ export const readCertificate = async (
         if (lowercasedOwner === lowercasedPublicKeyOfSigner) {
             return successCallBack();
         }
-
-        if (lowercasedIssuer === lowercasedPublicKeyOfSigner) {
+        else if (lowercasedIssuer === lowercasedPublicKeyOfSigner) {
             return successCallBack();
         }
-
-        if (lowercasedKeys.includes(lowercasedPublicKeyOfSigner)) {
+        else if (lowercasedKeys.includes(lowercasedPublicKeyOfSigner)) {
             return successCallBack();
+        }
+        else {
+            return callback(getError(ErrorEnum.NOTOWNERORISSUER));
         }
     }
 

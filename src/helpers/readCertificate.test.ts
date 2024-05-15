@@ -145,8 +145,8 @@ describe('readCertificate', () => {
       const callback = jest.fn();
       await readCertificate(data, callback, configuration);
 
-      // Expect the callback to be called with the WRONGJWT error since the issuer doesn't match owner or issuer
-      expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.WRONGJWT));
+      // Expect the callback to be called with the NOTOWNERORISSUER error since the issuer doesn't match owner or issuer
+      expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.NOTOWNERORISSUER));
     });
 
     test('should return an error with valid bearer when payload issuer is issuer but subId does not match certificateId', async () => {
@@ -267,10 +267,12 @@ describe('readCertificate', () => {
     it('should work with a message/signature and correctly lowercase the needed data', async () => {
       wallet.web3.eth.accounts.recover = jest.fn(() => 'someOwner');
 
+      const timestamp = new Date().toISOString();
+
       const data = {
         certificateId: '84801077',
         authentification: {
-          message: '{"certificateId":"84801077","timestamp":"2023-09-13T12:14:18.711Z"}',
+          message: '{"certificateId":"84801077","timestamp":"'+timestamp+'"}',
           signature:
             '0x0de47a78ee3e683fdfa57c654e80e9d51aea1d6192c5dcd00d548d28e9383d3f42685c9a383549fdca36e89cc05bf4a4ff82ad4d18c1bc8094daa0f2f80ce5c61b',
           messageHash: '0x0738b04b872fe8d68fa24c0ec3cd69a0ba15a78021c4e38ed4028c4ac80e0e72',
