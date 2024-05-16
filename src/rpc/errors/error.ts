@@ -1,6 +1,6 @@
 import {isDebug} from "../libs/isDebugMode";
 
-export const enum ErrorEnum {
+export enum ErrorEnum {
     MAINERROR='MAINERROR',
     CALLBACKIMPLEMENTATION='CALLBACKIMPLEMENTATION',
     WRONGCERTIFICATEID='WRONGCERTIFICATEID',
@@ -9,9 +9,11 @@ export const enum ErrorEnum {
     JSONSCHEMA='JSONSCHEMA',
     WRONGMESSAGEID='WRONGMESSAGEID',
     WRONGJWT = "WRONGJWT",
-    NOCERTIFICATE = "NOCERTIFICATE"
+    NOCERTIFICATE = "NOCERTIFICATE",
+    NOTOWNERORISSUER = "NOTOWNERORISSUER"
 
 }
+
 const errorLog={
    [ErrorEnum.MAINERROR]  : { code: 0, message: "unauthorized" },
    [ErrorEnum.CALLBACKIMPLEMENTATION]  : { code: 1, message: "callback implementation throw error" },
@@ -21,15 +23,11 @@ const errorLog={
    [ErrorEnum.JSONSCHEMA]  : { code: 5, message: "JSON Schema is unreachable" },
    [ErrorEnum.WRONGMESSAGEID]  : { code: 6, message: "messageId in header and data are not the same " },
    [ErrorEnum.WRONGJWT]  : { code: 7, message: "the JWT is not valid" },
-   [ErrorEnum.NOCERTIFICATE]  : { code: 8, message: "the certificate doesn\'t exist" }
+   [ErrorEnum.NOCERTIFICATE]  : { code: 8, message: "the certificate doesn\'t exist" },
+   [ErrorEnum.NOTOWNERORISSUER]  : { code: 9, message: "the issuer of the JWT is neither the owner nor the issuer of the nft" }
 
 }
 
 export const getError=(error:ErrorEnum)=>{
-    if(!isDebug){
-        return errorLog[ErrorEnum.MAINERROR]
-    }else{
-        console.log(error)
-        return errorLog[error]
-    }
+    return errorLog[error];
 }
