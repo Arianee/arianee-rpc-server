@@ -7,6 +7,7 @@ import Wallet from "@arianee/wallet";
 import Creator from "@arianee/creator";
 import {ArianeePrivacyGatewayClient} from "@arianee/arianee-privacy-gateway-client";
 import {ArianeeAccessToken} from "@arianee/arianee-access-token";
+import { PrivacyGatewayError } from "@arianee/arianee-privacy-gateway-client/src/lib/errors/PrivacyGatewayError";
 
 describe('Message', () => {
     let certificateId
@@ -20,9 +21,9 @@ describe('Message', () => {
     const issuerMnemonic = process.env.ISSUERMNEMONIC;
 
     beforeAll(async () => {
-        const issuerCore = Core.fromMnemonic(issuerMnemonic)
+        const issuerCore = Core.fromMnemonic(issuerMnemonic!)
         const randomCore = Core.fromRandom();
-        const ownerCore = Core.fromMnemonic(ownerMnemonic);
+        const ownerCore = Core.fromMnemonic(ownerMnemonic!);
 
 
         arianeePrivacyGatewayClientOwner = new ArianeePrivacyGatewayClient(ownerCore);
@@ -34,12 +35,12 @@ describe('Message', () => {
         certificateId = 51628187;
         messageId =814092728
 
-        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: messageId, content: messageContent});
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL!, { messageId: messageId, content: messageContent});
 
 
     });
     test('should be able create content if content is equal to imprint', async () => {
-        arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
+        arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL!, { messageId: ""+messageId, content: messageContent});
         expect(true).toBeTruthy();
 
     });
@@ -48,8 +49,13 @@ describe('Message', () => {
     test('should NOT be able create content if content is not equal to imprint', async () => {
         const certificateClone = cloneDeep(messageContent);
         certificateClone.title = 'anothertitle';
-        const result = await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: certificateClone});
-        expect(result.error.message).toEqual("Imprint does not match content")
+
+        try {
+            await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL!, { messageId: ""+messageId, content: certificateClone});
+        } catch (e) {
+            expect(e).toBeInstanceOf(PrivacyGatewayError);
+            expect((e as PrivacyGatewayError).message).toEqual("Imprint does not match content")
+        }
     });
 /*
     test('should be able create content if messageId does not exist in bc', async () => {
@@ -62,32 +68,36 @@ console.log('start3')
     });*/
 
     test('issuer should be able get content', async () => {
-        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL!, { messageId: ""+messageId, content: messageContent});
 
-        const result = await arianeePrivacyGatewayClientIssuer.messageRead(process.env.rpcURL, { messageId: messageId});
+        const result = await arianeePrivacyGatewayClientIssuer.messageRead(process.env.rpcURL!, { messageId: messageId});
         expect(result).toEqual(messageContent);
     })
 
     test('owner should be able get content', async () => {
-        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL!, { messageId: ""+messageId, content: messageContent});
 
-        const result = await arianeePrivacyGatewayClientOwner.messageRead(process.env.rpcURL, { messageId: ""+messageId});
+        const result = await arianeePrivacyGatewayClientOwner.messageRead(process.env.rpcURL!, { messageId: ""+messageId});
         expect(result).toEqual(messageContent);
     })
 
     test('random should not be able get content', async () => {
-        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL!, { messageId: ""+messageId, content: messageContent});
 
-        const result = await arianeePrivacyGatewayClientRandom.messageRead(process.env.rpcURL, { messageId: ""+messageId});
-        expect(result).toBeUndefined();
+        try {
+            await arianeePrivacyGatewayClientRandom.messageRead(process.env.rpcURL!, { messageId: ""+messageId});
+        } catch (e) {
+            expect(e).toBeInstanceOf(PrivacyGatewayError);
+            expect((e as PrivacyGatewayError).message).toEqual("the JWT is not valid")
+        }
     })
 
 
     test('random with wallet access token should be able get content', async () => {
-        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL, { messageId: ""+messageId, content: messageContent});
+        await arianeePrivacyGatewayClientIssuer.messageCreate(process.env.rpcURL!, { messageId: ""+messageId, content: messageContent});
         const arianeeJWT = await arianeeAccessTokenOwner.createWalletAccessToken();
         const aatapgc = new ArianeePrivacyGatewayClient(arianeeJWT);
-        const result = await aatapgc.messageRead(process.env.rpcURL, { messageId: ""+messageId});
+        const result = await aatapgc.messageRead(process.env.rpcURL!, { messageId: ""+messageId});
 
 
         expect(result).toEqual(messageContent);

@@ -6,6 +6,7 @@ import {ArianeePrivacyGatewayClient}
     from "@arianee/arianee-privacy-gateway-client";
 import Wallet from "@arianee/wallet";
 import Creator from "@arianee/creator";
+import { PrivacyGatewayError } from "@arianee/arianee-privacy-gateway-client/src/lib/errors/PrivacyGatewayError";
 
 
 describe('Certificate', () => {
@@ -26,9 +27,9 @@ describe('Certificate', () => {
 
     beforeAll(async () => {
         try {
-            const issuerCore = Core.fromMnemonic(issuerMnemonic)
+            const issuerCore = Core.fromMnemonic(issuerMnemonic!)
             const randomCore = Core.fromRandom();
-            const ownerCore = Core.fromMnemonic(ownerMnemonic);
+            const ownerCore = Core.fromMnemonic(ownerMnemonic!);
 
             arianeePrivacyGatewayClientOwner = new ArianeePrivacyGatewayClient(ownerCore)
             arianeePrivacyGatewayClientRandom = new ArianeePrivacyGatewayClient(randomCore);
@@ -48,7 +49,7 @@ describe('Certificate', () => {
             console.info(`preparing wallets:  ${certificateId} ${passphrase}`);
 
             console.log('preparing wallets: requesting ownership');
-            await arianeePrivacyGatewayClientRandom.certificateCreate(process.env.rpcURL, {certificateId, content: certificateContent})
+            await arianeePrivacyGatewayClientRandom.certificateCreate(process.env.rpcURL!, {certificateId, content: certificateContent})
 
         } catch (e) {
             console.error(e);
@@ -56,12 +57,12 @@ describe('Certificate', () => {
     });
     describe('create content', () => {
         test(' should be able create content if content is equal to imprint', async () => {
-            await arianeePrivacyGatewayClientRandom.certificateCreate(process.env.rpcURL, {certificateId, content: certificateContent});
+            await arianeePrivacyGatewayClientRandom.certificateCreate(process.env.rpcURL!, {certificateId, content: certificateContent});
             expect(true).toBeTruthy();
 
         });
         test('should be able create content if content is equal to imprint (even if not owner)', async () => {
-            await arianeePrivacyGatewayClientRandom.certificateCreate(process.env.rpcURL, {certificateId, content: certificateContent});
+            await arianeePrivacyGatewayClientRandom.certificateCreate(process.env.rpcURL!, {certificateId, content: certificateContent});
             expect(true).toBeTruthy();
 
         });
@@ -70,29 +71,35 @@ describe('Certificate', () => {
             const certificateClone = cloneDeep(certificateContent);
             certificateClone.name = 'anotherName';
 
-            const result = await arianeePrivacyGatewayClientRandom.certificateCreate(process.env.rpcURL, {certificateId, content: certificateClone});
-            expect(result.error.message).toEqual("Imprint does not match content")
+            try {
+                await arianeePrivacyGatewayClientOwner.certificateCreate(process.env.rpcURL!, {certificateId, content: certificateClone});           
+            } catch (e) {
+                expect(e).toBeInstanceOf(PrivacyGatewayError);
+                expect((e as PrivacyGatewayError).message).toEqual("Imprint does not match content")
+            }
         });
 
     });
     describe('read', () => {
 
         test('owner should be able get content', async () => {
-            const result = await arianeePrivacyGatewayClientOwner.certificateRead(process.env.rpcURL, {certificateId})
+            const result = await arianeePrivacyGatewayClientOwner.certificateRead(process.env.rpcURL!, {certificateId})
 
             expect(result).toEqual(certificateContent);
         });
         test('not owner should NOT be able get content', async () => {
-            const result = await arianeePrivacyGatewayClientRandom.certificateRead(process.env.rpcURL, {certificateId})
-
-            expect(result).toBeUndefined();
-
+            try {
+                await arianeePrivacyGatewayClientRandom.certificateRead(process.env.rpcURL!, {certificateId})
+            } catch (e) {
+                expect(e).toBeInstanceOf(PrivacyGatewayError);
+                expect((e as PrivacyGatewayError).message).toEqual("the issuer of the JWT is neither the owner nor the issuer of the nft")
+            }
         });
 
         test('valid arianeeJWT should be able to get content', async () => {
             const jwt = await arianeeAccessTokenOwner.createCertificateArianeeAccessToken(certificateId, 'mainnet')
             const aatapgc = new ArianeePrivacyGatewayClient(jwt);
-            const result = await aatapgc.certificateRead(process.env.rpcURL, {certificateId})
+            const result = await aatapgc.certificateRead(process.env.rpcURL!, {certificateId})
 
             expect(result).toEqual(certificateContent);
 
@@ -102,10 +109,13 @@ describe('Certificate', () => {
             const arianeeAccessTokenRandom = new ArianeeAccessToken(Core.fromRandom())
             const unvalidArianeeJWT = await arianeeAccessTokenRandom.createCertificateArianeeAccessToken(certificateId, 'mainnet');
             const aatapgc = new ArianeePrivacyGatewayClient(unvalidArianeeJWT);
-            const result = await aatapgc.certificateRead(process.env.rpcURL, {certificateId})
 
-            expect(result).toBeUndefined();
-
+            try {
+                await aatapgc.certificateRead(process.env.rpcURL!, {certificateId})
+            } catch (e) {
+                expect(e).toBeInstanceOf(PrivacyGatewayError);
+                expect((e as PrivacyGatewayError).message).toEqual("the issuer of the JWT is neither the owner nor the issuer of the nft")
+            }
 
         });
 
@@ -114,7 +124,7 @@ describe('Certificate', () => {
             const arianeeJWT = await arianeeAccessTokenOwner.createWalletAccessToken({}, "the prefix")
             const apgClient = new ArianeePrivacyGatewayClient(arianeeJWT)
 
-            const result = await apgClient.certificateRead(process.env.rpcURL, {certificateId});
+            const result = await apgClient.certificateRead(process.env.rpcURL!, {certificateId});
 
             expect(result).toEqual(certificateContent);
 
@@ -122,19 +132,19 @@ describe('Certificate', () => {
 
         test('valid arianeeAccessToken without prefix should be able to get content', async () => {
 
-            const core = Core.fromMnemonic(ownerMnemonic);
+            const core = Core.fromMnemonic(ownerMnemonic!);
             const aat = new ArianeeAccessToken(core)
             const arianeeJWT = await aat.createWalletAccessToken()
             const apgClient = new ArianeePrivacyGatewayClient(arianeeJWT)
 
-            const result = await apgClient.certificateRead(process.env.rpcURL, {certificateId});
+            const result = await apgClient.certificateRead(process.env.rpcURL!, {certificateId});
 
             expect(result).toEqual(certificateContent);
 
         });
 
         test('issuer should be able to get content even if not owner', async () => {
-            const result = await arianeePrivacyGatewayClientIssuer.certificateRead(process.env.rpcURL, {certificateId})
+            const result = await arianeePrivacyGatewayClientIssuer.certificateRead(process.env.rpcURL!, {certificateId})
 
             expect(result).toBeDefined();
             expect(result).toEqual(certificateContent);
@@ -146,7 +156,7 @@ describe('Certificate', () => {
             const arianeeJWT = await arianeeAccessTokenOwner.createWalletAccessToken();
 
             const apgClient = new ArianeePrivacyGatewayClient(arianeeJWT)
-            const result = await apgClient.certificateRead(process.env.rpcURL, {certificateId})
+            const result = await apgClient.certificateRead(process.env.rpcURL!, {certificateId})
 
             expect(result).toBeDefined();
             expect(result).toEqual(certificateContent);
@@ -156,7 +166,7 @@ describe('Certificate', () => {
             const arianeeJWT = await arianeeAccessTokenIssuer.createWalletAccessToken();
 
             const apgClient = new ArianeePrivacyGatewayClient(arianeeJWT)
-            const result = await apgClient.certificateRead(process.env.rpcURL, {certificateId})
+            const result = await apgClient.certificateRead(process.env.rpcURL!, {certificateId})
 
             expect(result).toBeDefined();
             expect(result).toEqual(certificateContent);
@@ -166,9 +176,12 @@ describe('Certificate', () => {
             const arianeeJWT = await arianeeAccessTokenRandom.createWalletAccessToken()
 
             const apgClient = new ArianeePrivacyGatewayClient(arianeeJWT)
-            const result = await  apgClient.certificateRead(process.env.rpcURL, {certificateId})
-
-            expect(result).toBeUndefined();
+            try {
+                await  apgClient.certificateRead(process.env.rpcURL!, {certificateId})
+            } catch (e) {
+                expect(e).toBeInstanceOf(PrivacyGatewayError);
+                expect((e as PrivacyGatewayError).message).toEqual("the issuer of the JWT is neither the owner nor the issuer of the nft")
+            }
         })
 
     })
