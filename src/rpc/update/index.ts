@@ -1,6 +1,6 @@
 import {CertificatePayload, CertificatePayloadCreate} from "../models/certificates";
 import {SyncFunc} from "../models/func";
-import {ErrorEnum, getError} from "../errors/error";
+import { getError} from "../errors/error";
 import {callBackFactory} from "../libs/callBackFactory";
 import {RPCNAME} from "../rpc-name";
 import {readCertificate} from "../../helpers/readCertificate";
@@ -8,6 +8,7 @@ import {ReadConfiguration} from "../models/readConfiguration";
 import {calculateImprint} from "../../helpers/calculateImprint";
 import Core from "@arianee/core";
 import {ArianeeProtocolClient, callWrapper} from "@arianee/arianee-protocol-client";
+import { PrivacyGatewayErrorEnum } from "@arianee/common-types";
 
 const updateRPCFactory = (configuration: ReadConfiguration) => {
 
@@ -46,9 +47,9 @@ const updateRPCFactory = (configuration: ReadConfiguration) => {
                 return successCallBackWithoutValidation();
             }
 
-            return callback(getError(ErrorEnum.MAINERROR));
+            return callback(getError(PrivacyGatewayErrorEnum.MAINERROR));
         } catch (e) {
-            return callback(getError(ErrorEnum.NOCERTIFICATE));
+            return callback(getError(PrivacyGatewayErrorEnum.NOCERTIFICATE));
         }
 
     }

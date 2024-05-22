@@ -1,8 +1,8 @@
 import { readCertificate } from './readCertificate';
 import { ArianeeApiClient } from '@arianee/arianee-api-client';
 import { ArianeeAccessToken } from '@arianee/arianee-access-token';
-import { ErrorEnum, getError } from '../rpc/errors/error';
-
+import { getError } from '../rpc/errors/error';
+import { PrivacyGatewayErrorEnum } from '@arianee/common-types';
 
 jest.mock('@arianee/arianee-api-client', () => {
   return {
@@ -22,17 +22,20 @@ jest.mock('@arianee/arianee-api-client', () => {
   };
 });
 jest.mock('@arianee/arianee-access-token');
-jest.mock('ethers', ()=>{
-  return{
-    ethers:{
-        verifyMessage:(message:string, signature:string)=>{
-          if(signature === "0x0de47a78ee3e683fdfa57c654e80e9d51aea1d6192c5dcd00d548d28e9383d3f42685c9a383549fdca36e89cc05bf4a4ff82ad4d18c1bc8094daa0f2f80ce5c61b"){
-            return "someOwner"
-          }
-          return "notOwner";
+jest.mock('ethers', () => {
+  return {
+    ethers: {
+      verifyMessage: (message: string, signature: string) => {
+        if (
+          signature ===
+          '0x0de47a78ee3e683fdfa57c654e80e9d51aea1d6192c5dcd00d548d28e9383d3f42685c9a383549fdca36e89cc05bf4a4ff82ad4d18c1bc8094daa0f2f80ce5c61b'
+        ) {
+          return 'someOwner';
         }
-    }
-  }
+        return 'notOwner';
+      },
+    },
+  };
 });
 describe('readCertificate', () => {
   let configuration: any;
@@ -146,7 +149,7 @@ describe('readCertificate', () => {
       await readCertificate(data, callback, configuration);
 
       // Expect the callback to be called with the NOTOWNERORISSUER error since the issuer doesn't match owner or issuer
-      expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.NOTOWNERORISSUER));
+      expect(callback).toHaveBeenCalledWith(getError(PrivacyGatewayErrorEnum.NOTOWNERORISSUER));
     });
 
     test('should return an error with valid bearer when payload issuer is issuer but subId does not match certificateId', async () => {
@@ -161,7 +164,7 @@ describe('readCertificate', () => {
       await readCertificate(data, callback, configuration);
 
       // Expect the callback to be called with the WRONGJWT error since the subId doesn't match the certificateId
-      expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.WRONGJWT));
+      expect(callback).toHaveBeenCalledWith(getError(PrivacyGatewayErrorEnum.WRONGJWT));
     });
 
     test('should return an error with valid bearer when payload issuer is owner but subId does not match certificateId', async () => {
@@ -176,7 +179,7 @@ describe('readCertificate', () => {
       await readCertificate(data, callback, configuration);
 
       // Expect the callback to be called with the WRONGJWT error since the subId doesn't match the certificateId
-      expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.WRONGJWT));
+      expect(callback).toHaveBeenCalledWith(getError(PrivacyGatewayErrorEnum.WRONGJWT));
     });
 
     test('should return an error when bearer is invalid', async () => {
@@ -189,7 +192,7 @@ describe('readCertificate', () => {
       await readCertificate(data, callback, configuration);
 
       // Expect the callback to have been called with the WRONGJWT error
-      expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.WRONGJWT));
+      expect(callback).toHaveBeenCalledWith(getError(PrivacyGatewayErrorEnum.WRONGJWT));
     });
   });
 
@@ -202,7 +205,8 @@ describe('readCertificate', () => {
         certificateId: '123',
         authentification: {
           message: 'someMessage',
-          signature: '0x262d6e00093044c5b3326372bdde4dddd39c91b4094fd253ecbbe4f593f7ecac66fe9fb95c37dee4722019d99f9d2dddbf328e838f5c65c7713cb9111f431ae31b',
+          signature:
+            '0x262d6e00093044c5b3326372bdde4dddd39c91b4094fd253ecbbe4f593f7ecac66fe9fb95c37dee4722019d99f9d2dddbf328e838f5c65c7713cb9111f431ae31b',
         },
       };
       configuration.fetchItem.mockResolvedValueOnce({ content: 'sample-content' });
@@ -214,7 +218,8 @@ describe('readCertificate', () => {
             certificateId: 123,
             timestamp: new Date().toISOString(), // Current timestamp
           }),
-          signature: '0x0de47a78ee3e683fdfa57c654e80e9d51aea1d6192c5dcd00d548d28e9383d3f42685c9a383549fdca36e89cc05bf4a4ff82ad4d18c1bc8094daa0f2f80ce5c61b',
+          signature:
+            '0x0de47a78ee3e683fdfa57c654e80e9d51aea1d6192c5dcd00d548d28e9383d3f42685c9a383549fdca36e89cc05bf4a4ff82ad4d18c1bc8094daa0f2f80ce5c61b',
         },
       };
 
@@ -231,7 +236,7 @@ describe('readCertificate', () => {
       await readCertificate(data, callback, configuration);
 
       // Expect the callback to have been called with the SIGNATURETOOOLD error
-      expect(callback).toHaveBeenCalledWith(getError(ErrorEnum.SIGNATURETOOOLD));
+      expect(callback).toHaveBeenCalledWith(getError(PrivacyGatewayErrorEnum.SIGNATURETOOOLD));
     });
 
     test('should succeed when the signature is valid and matches the issuer', async () => {
@@ -272,7 +277,7 @@ describe('readCertificate', () => {
       const data = {
         certificateId: '84801077',
         authentification: {
-          message: '{"certificateId":"84801077","timestamp":"'+timestamp+'"}',
+          message: '{"certificateId":"84801077","timestamp":"' + timestamp + '"}',
           signature:
             '0x0de47a78ee3e683fdfa57c654e80e9d51aea1d6192c5dcd00d548d28e9383d3f42685c9a383549fdca36e89cc05bf4a4ff82ad4d18c1bc8094daa0f2f80ce5c61b',
           messageHash: '0x0738b04b872fe8d68fa24c0ec3cd69a0ba15a78021c4e38ed4028c4ac80e0e72',
