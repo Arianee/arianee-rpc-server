@@ -3,27 +3,23 @@ import { ArianeeApiClient } from '@arianee/arianee-api-client';
 import { ArianeeAccessToken } from '@arianee/arianee-access-token';
 import { getError } from '../rpc/errors/error';
 import { PrivacyGatewayErrorEnum } from '@arianee/common-types';
+import * as cache from '../helpers/cache/cachedApiClient/cachedApiClient';
 
-jest.mock('@arianee/arianee-api-client', () => {
-  return {
-    ArianeeApiClient: jest.fn().mockImplementation(() => {
-      return {
-        network: {
-          getNft: jest.fn().mockReturnValue({
-            issuer: 'someIssuer',
-            owner: 'someOwner',
-            requestKey: 'someRequestKey',
-            viewKey: 'someViewKey',
-            proofKey: 'someProofKey',
-          }),
-        },
-      };
-    }),
-  };
-});
+jest.spyOn(cache, 'cachedGetNft').mockImplementation(
+  async () =>
+    ({
+      issuer: 'someIssuer',
+      owner: 'someOwner',
+      requestKey: 'someRequestKey',
+      viewKey: 'someViewKey',
+      proofKey: 'someProofKey',
+    } as any)
+);
+
 jest.mock('@arianee/arianee-access-token');
 jest.mock('ethers', () => {
   return {
+    ...jest.requireActual('ethers'),
     ethers: {
       verifyMessage: (message: string, signature: string) => {
         if (
