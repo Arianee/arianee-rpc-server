@@ -4,14 +4,15 @@ import { getError } from '../errors/error';
 import { callBackFactory } from '../libs/callBackFactory';
 import { ReadConfiguration } from '../models/readConfiguration';
 import { ArianeeAccessToken } from '@arianee/arianee-access-token';
-import { ArianeeApiClient } from '@arianee/arianee-api-client';
 import { calculateImprint } from '../../helpers/calculateImprint';
 import { ethers } from 'ethers';
 import { ArianeeProtocolClient, callWrapper } from '@arianee/arianee-protocol-client';
 import Core from '@arianee/core';
 import { PrivacyGatewayErrorEnum } from '@arianee/common-types';
-
-const arianeeApiClient = new ArianeeApiClient();
+import {
+  cachedGetArianeeEvent,
+  cachedGetNft,
+} from '../../helpers/cache/cachedApiClient/cachedApiClient';
 
 const eventRPCFactory = (configuration: ReadConfiguration) => {
   const { fetchItem, createItem, network, createWithoutValidationOnBC } = configuration;
@@ -65,7 +66,7 @@ const eventRPCFactory = (configuration: ReadConfiguration) => {
     const { certificateId, authentification, eventId } = data;
     const { message, signature, bearer } = authentification;
 
-    const { issuer, owner, requestKey, viewKey, proofKey } = await arianeeApiClient.network.getNft(
+    const { issuer, owner, requestKey, viewKey, proofKey } = await cachedGetNft(
       network,
       certificateId
     );
@@ -117,7 +118,7 @@ const eventRPCFactory = (configuration: ReadConfiguration) => {
 
       // Is the event exist
       try {
-        await arianeeApiClient.network.getArianeeEvent(configuration.network, eventId);
+        await cachedGetArianeeEvent(configuration.network, eventId);
       } catch (err) {
         return callback(getError(PrivacyGatewayErrorEnum.MAINERROR));
       }

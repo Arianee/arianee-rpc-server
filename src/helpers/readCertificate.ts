@@ -3,10 +3,9 @@ import { SyncFunc } from '../rpc/models/func';
 import { getError } from '../rpc/errors/error';
 import { ReadConfiguration } from '../rpc/models/readConfiguration';
 import { ArianeeAccessToken } from '@arianee/arianee-access-token';
-import { ArianeeApiClient } from '@arianee/arianee-api-client';
 import { ethers } from 'ethers';
 import { PrivacyGatewayErrorEnum } from '@arianee/common-types';
-const arianeeApiClient = new ArianeeApiClient();
+import { cachedGetNft } from './cache/cachedApiClient/cachedApiClient';
 
 export const readCertificate = async (
   data: CertificatePayload,
@@ -19,9 +18,9 @@ export const readCertificate = async (
   const { message, signature, bearer } = authentification;
 
   const { issuer, owner, requestKey, viewKey, proofKey, imprint } =
-    await arianeeApiClient.network.getNft(network, certificateId);
+    await cachedGetNft(network, certificateId);
 
-  const successCallBack = async () => {
+    const successCallBack = async () => {
     try {
       const content = await fetchItem(certificateId, imprint);
       return callback(null, content);

@@ -5,14 +5,13 @@ import { getError } from '../errors/error';
 import { callBackFactory } from '../libs/callBackFactory';
 import { ReadConfiguration } from '../models/readConfiguration';
 import { ArianeeAccessToken } from '@arianee/arianee-access-token';
-import { ArianeeApiClient } from '@arianee/arianee-api-client';
 import { ethers } from 'ethers';
 import { calculateImprint } from '../../helpers/calculateImprint';
 import Core from '@arianee/core';
 import { ArianeeProtocolClient, callWrapper } from '@arianee/arianee-protocol-client';
 import { PrivacyGatewayErrorEnum } from '@arianee/common-types';
+import { cachedGetMessage } from '../../helpers/cache/cachedApiClient/cachedApiClient';
 
-const arianeeApiClient = new ArianeeApiClient();
 
 const messageRPCFactory = (configuration: ReadConfiguration) => {
   const { fetchItem, createItem, network, createWithoutValidationOnBC } = configuration;
@@ -66,7 +65,7 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
     const { authentification, messageId } = data;
     const { message, signature, bearer } = authentification;
 
-    const messageBc = await arianeeApiClient.network.getMessage(configuration.network, messageId);
+    const messageBc = await cachedGetMessage(configuration.network, messageId);
 
     if (bearer) {
       let payload;
@@ -107,10 +106,7 @@ const messageRPCFactory = (configuration: ReadConfiguration) => {
 
     // Is the message exist
     try {
-      const arianeeMessage = await arianeeApiClient.network.getMessage(
-        configuration.network,
-        messageId
-      );
+      const arianeeMessage = await cachedGetMessage(configuration.network, messageId);
       if (
         !arianeeMessage &&
         arianeeMessage.receiver.toLowerCase() !== publicAddressOfSender.toLowerCase() &&
