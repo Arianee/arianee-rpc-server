@@ -12,81 +12,86 @@ export const readCertificate = async (
   callback: SyncFunc,
   configuration: ReadConfiguration
 ) => {
-  const { fetchItem, network } = configuration;
+  try {
+    const {fetchItem, network} = configuration;
 
-  const { certificateId, authentification } = data;
-  const { message, signature, bearer } = authentification;
+    const {certificateId, authentification} = data;
+    const {message, signature, bearer} = authentification;
 
-  const { issuer, owner, requestKey, viewKey, proofKey, imprint } =
-    await cachedGetNft(network, certificateId);
+    const {issuer, owner, requestKey, viewKey, proofKey, imprint} =
+        await cachedGetNft(network, certificateId);
 
     const successCallBack = async () => {
-    try {
-      const content = await fetchItem(certificateId, imprint);
-      return callback(null, content);
-    } catch (err) {
-      return callback(getError(PrivacyGatewayErrorEnum.MAINERROR));
+      try {
+        const content = await fetchItem(certificateId, imprint);
+        return callback(null, content);
+      } catch (err) {
+        return callback(getError(PrivacyGatewayErrorEnum.MAINERROR));
+      }
+    };
+
+    const lowercasedKeys = [requestKey, viewKey, proofKey].map((k) => (k ?? '').toLowerCase());
+
+    const lowercasedOwner = owner.toLowerCase();
+    const lowercasedIssuer = issuer.toLowerCase();
+
+    if (bearer) {
+      let payload;
+      try {
+        payload = ArianeeAccessToken.decodeJwt(bearer).payload; // decode test that aat is valid and throw if not
+      } catch (e) {
+        return callback(getError(PrivacyGatewayErrorEnum.WRONGJWT));
+      }
+
+      const lowercasedPayloadIssuer = payload.iss.toLowerCase();
+      const isOwnerOrIssuerOfNft =
+          lowercasedPayloadIssuer === lowercasedOwner || lowercasedPayloadIssuer === lowercasedIssuer;
+
+      if (!isOwnerOrIssuerOfNft) {
+        return callback(getError(PrivacyGatewayErrorEnum.NOTOWNERORISSUER));
+      }
+
+      if (+payload.subId === +certificateId) {
+        return successCallBack();
+      } else if (payload.sub === 'wallet') {
+        return successCallBack();
+      } else {
+        return callback(getError(PrivacyGatewayErrorEnum.WRONGJWT));
+      }
     }
-  };
 
-  const lowercasedKeys = [requestKey, viewKey, proofKey].map((k) => (k ?? '').toLowerCase());
+    if (message && signature) {
+      const lowercasedPublicKeyOfSigner = (
+          ethers.verifyMessage(message, signature) ?? ''
+      ).toLowerCase();
 
-  const lowercasedOwner = owner.toLowerCase();
-  const lowercasedIssuer = issuer.toLowerCase();
+      const parsedMessage = JSON.parse(message);
 
-  if (bearer) {
-    let payload;
-    try {
-      payload = ArianeeAccessToken.decodeJwt(bearer).payload; // decode test that aat is valid and throw if not
-    } catch (e) {
-      return callback(getError(PrivacyGatewayErrorEnum.WRONGJWT));
+      if (+parsedMessage.certificateId !== +certificateId) {
+        return callback(getError(PrivacyGatewayErrorEnum.WRONGCERTIFICATEID));
+      }
+
+      const isSignatureTooOld =
+          (new Date().getTime() - new Date(parsedMessage.timestamp).getTime()) / 1000 > 300;
+
+      if (isSignatureTooOld) {
+        return callback(getError(PrivacyGatewayErrorEnum.SIGNATURETOOOLD));
+      }
+
+      if (lowercasedOwner === lowercasedPublicKeyOfSigner) {
+        return successCallBack();
+      } else if (lowercasedIssuer === lowercasedPublicKeyOfSigner) {
+        return successCallBack();
+      } else if (lowercasedKeys.includes(lowercasedPublicKeyOfSigner)) {
+        return successCallBack();
+      } else {
+        return callback(getError(PrivacyGatewayErrorEnum.NOTOWNERORISSUER));
+      }
     }
 
-    const lowercasedPayloadIssuer = payload.iss.toLowerCase();
-    const isOwnerOrIssuerOfNft =
-      lowercasedPayloadIssuer === lowercasedOwner || lowercasedPayloadIssuer === lowercasedIssuer;
-
-    if (!isOwnerOrIssuerOfNft) {
-      return callback(getError(PrivacyGatewayErrorEnum.NOTOWNERORISSUER));
-    }
-
-    if (+payload.subId === +certificateId) {
-      return successCallBack();
-    } else if (payload.sub === 'wallet') {
-      return successCallBack();
-    } else {
-      return callback(getError(PrivacyGatewayErrorEnum.WRONGJWT));
-    }
+    return callback(getError(PrivacyGatewayErrorEnum.MAINERROR));
   }
-
-  if (message && signature) {
-    const lowercasedPublicKeyOfSigner = (
-      ethers.verifyMessage(message, signature) ?? ''
-    ).toLowerCase();
-
-    const parsedMessage = JSON.parse(message);
-
-    if (+parsedMessage.certificateId !== +certificateId) {
-      return callback(getError(PrivacyGatewayErrorEnum.WRONGCERTIFICATEID));
-    }
-
-    const isSignatureTooOld =
-      (new Date().getTime() - new Date(parsedMessage.timestamp).getTime()) / 1000 > 300;
-
-    if (isSignatureTooOld) {
-      return callback(getError(PrivacyGatewayErrorEnum.SIGNATURETOOOLD));
-    }
-
-    if (lowercasedOwner === lowercasedPublicKeyOfSigner) {
-      return successCallBack();
-    } else if (lowercasedIssuer === lowercasedPublicKeyOfSigner) {
-      return successCallBack();
-    } else if (lowercasedKeys.includes(lowercasedPublicKeyOfSigner)) {
-      return successCallBack();
-    } else {
-      return callback(getError(PrivacyGatewayErrorEnum.NOTOWNERORISSUER));
-    }
+  catch (e) {
+    return callback(getError(PrivacyGatewayErrorEnum.MAINERROR));
   }
-
-  return callback(getError(PrivacyGatewayErrorEnum.MAINERROR));
 };
