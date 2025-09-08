@@ -13,6 +13,7 @@ import {
   cachedGetArianeeEvent,
   cachedGetNft,
 } from '../../helpers/cache/cachedApiClient/cachedApiClient';
+import { ArianeeEvent } from '@arianee/arianee-api-client/src/lib/types/arianeeEvent';
 
 const eventRPCFactory = (configuration: ReadConfiguration) => {
   const { fetchItem, createItem, network, createWithoutValidationOnBC } = configuration;
@@ -66,10 +67,19 @@ const eventRPCFactory = (configuration: ReadConfiguration) => {
     const { certificateId, authentification, eventId } = data;
     const { message, signature, bearer } = authentification;
 
-    const { issuer, owner, requestKey, viewKey, proofKey } = await cachedGetNft(
-      network,
-      certificateId
-    );
+    const [
+      { issuer, owner, requestKey, viewKey, proofKey },
+      { issuer: eventIssuer }
+    ] = await Promise.all([
+      cachedGetNft(network, certificateId),
+      cachedGetArianeeEvent(configuration.network, eventId)
+    ]);
+
+    const nftOwnerLowerCase = owner.toLowerCase();
+    const nftIssuerLowerCase = issuer.toLowerCase();
+    const eventIssuerLowerCase = eventIssuer.toLowerCase();
+
+    const allowedReaders = [nftOwnerLowerCase, nftIssuerLowerCase, eventIssuerLowerCase];
 
     if (bearer) {
       let payload;
@@ -79,20 +89,19 @@ const eventRPCFactory = (configuration: ReadConfiguration) => {
         return callback(getError(PrivacyGatewayErrorEnum.WRONGJWT));
       }
 
+
       const payloadIssuerLowerCase = payload.iss.toLowerCase();
-      const nftOwnerLowerCase = owner.toLowerCase();
-      const nftIssuerLowerCase = issuer.toLowerCase();
+
 
       if (
         payload.subId === certificateId &&
-        (payloadIssuerLowerCase === nftOwnerLowerCase ||
-          payloadIssuerLowerCase === nftIssuerLowerCase)
+        allowedReaders.includes(payloadIssuerLowerCase)
       ) {
         return successCallBack();
       } else if (
         payload.sub === 'wallet' &&
-        (payloadIssuerLowerCase === nftOwnerLowerCase ||
-          payloadIssuerLowerCase === nftIssuerLowerCase)
+        allowedReaders.includes(payloadIssuerLowerCase)
+
       ) {
         return successCallBack();
       } else {
@@ -115,27 +124,14 @@ const eventRPCFactory = (configuration: ReadConfiguration) => {
       if (isSignatureTooOld) {
         return callback(getError(PrivacyGatewayErrorEnum.MAINERROR));
       }
-
-      // Is the event exist
-      try {
-        await cachedGetArianeeEvent(configuration.network, eventId);
-      } catch (err) {
-        return callback(getError(PrivacyGatewayErrorEnum.MAINERROR));
-      }
-
-      // Is user the owner of this certificate
-      if (owner.toLowerCase() === publicAddressOfSender.toLowerCase()) {
-        return successCallBack();
-      }
-
-      // Is user the issuer of this certificate
-
-      if (issuer.toLowerCase() === publicAddressOfSender.toLowerCase()) {
-        return successCallBack();
-      }
-
       const lowercasedKeys = [requestKey, viewKey, proofKey].map((k) => (k ?? '').toLowerCase());
-      if (lowercasedKeys.includes(publicAddressOfSender.toLowerCase())) {
+
+      const concatenatedKeys = [...lowercasedKeys, ...allowedReaders];
+
+      const lowercasedPublicKeyOfSigner = publicAddressOfSender.toLowerCase();
+
+      // is the user the owner of the nft, the issuer of the nft or the issuer of the event or request key, view key or proof key
+      if (concatenatedKeys.includes(lowercasedPublicKeyOfSigner)) {
         return successCallBack();
       }
     }
